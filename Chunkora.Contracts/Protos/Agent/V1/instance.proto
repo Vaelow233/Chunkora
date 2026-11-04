@@ -1,0 +1,33 @@
+﻿syntax = "proto3";
+
+package chunkora.agent.v1;
+
+option csharp_namespace = "Chunkora.Contracts.Agent.V1";
+
+import "google/protobuf/timestamp.proto";
+
+service InstanceService {
+  rpc ConnectInstances(SyncInstancesRequest) returns (stream SyncInstancesResponse);
+}
+
+message Instance {
+  string id = 1;
+  string node_id = 2;
+  string name = 3;
+  string description = 4;
+  string path = 5;
+  string launch_command = 6;
+  string stop_command = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message SyncInstancesResponse {
+  string request_id = 1;
+  google.protobuf.Timestamp generated_time = 2;
+  repeated Instance instance = 3;
+}
+
+message SyncInstancesRequest {
+  string request_id = 1;
+}

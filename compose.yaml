@@ -1,0 +1,13 @@
+﻿services:
+  chunkora.server:
+    image: chunkora.server
+    build:
+      context: .
+      dockerfile: Chunkora.Server/Dockerfile
+
+  chunkora.agent:
+    image: chunkora.agent
+    build:
+      context: .
+      dockerfile: Chunkora.Agent/Dockerfile
+

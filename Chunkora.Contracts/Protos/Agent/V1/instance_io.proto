@@ -1,0 +1,224 @@
+﻿syntax = "proto3";
+
+package chunkora.agent.v1;
+
+option csharp_namespace = "Chunkora.Contracts.Agent.V1";
+
+import "google/protobuf/timestamp.proto";
+
+service InstanceIoService {
+  rpc ConnectInstanceIo(stream AgentInstanceIoMessage) returns (stream ServerInstanceIoMessage);
+}
+
+enum InstanceIoResult {
+  INSTANCE_IO_SUCCESS = 0;
+  INSTANCE_IO_TYPE_UNSUPPORTED = 1;
+  UNINITIALIZED = 2;
+  INSTANCE_NOT_FOUND = 3;
+  INSTANCE_IO_DIRECTORY_NOT_FOUND = 4;
+  INSTANCE_IO_UNAUTHORIZED_PATH = 5;
+  INSTANCE_IO_UNKNOWN_ERROR = 6;
+  INSTANCE_IO_OBJECT_IS_OCCUPIED = 7;
+  INSTANCE_IO_WRITER_NOT_FOUND = 8;
+}
+
+message InstanceIoStreamPing {
+  string request_id = 1;
+}
+
+message InstanceIoFileResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+  int32 total_chunks = 5;
+  int32 chunk = 6;
+  bytes data = 7;
+}
+
+enum InstanceIoObjectType {
+  INSTANCE_IO_OBJECT_TYPE_UNSPECIFIED = 0;
+  INSTANCE_IO_OBJECT_TYPE_FILE = 1;
+  INSTANCE_IO_OBJECT_TYPE_DIRECTORY = 2;
+}
+
+message InstanceIoDirectoryObject {
+  InstanceIoObjectType type = 1;
+  string name = 2;
+  int64 size_bytes = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_updated_at = 5;
+  string permission = 6;
+}
+
+message InstanceIoDirectoryResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+  int32 total = 5;
+  int32 count = 6;
+  repeated InstanceIoDirectoryObject objects = 7;
+}
+
+message InstanceIoLogResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+  int32 total = 5;
+  int32 count = 6;
+  repeated string lines = 7;
+}
+
+message InstanceIoNewObjectResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+}
+
+message InstanceIoUploadResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+  int32 total_chunks = 5;
+  int32 chunk = 6;
+}
+
+message InstanceIoDeleteResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+}
+
+message InstanceIoCopyResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+}
+
+message InstanceIoMoveResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+}
+
+message InstanceIoRenameResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoResult code = 3;
+  optional string error = 4;
+}
+
+message AgentInstanceIoMessage {
+  oneof payload {
+    InstanceIoStreamPing ping = 1;
+    InstanceIoFileResponse file_response = 2;
+    InstanceIoDirectoryResponse directory_response = 3;
+    InstanceIoLogResponse log_response = 4;
+    InstanceIoNewObjectResponse new_object_response = 5;
+    InstanceIoUploadResponse upload_response = 6;
+    InstanceIoDeleteResponse delete_response = 7;
+    InstanceIoCopyResponse copy_response = 8;
+    InstanceIoMoveResponse move_response = 9;
+    InstanceIoRenameResponse rename_response = 10;
+  }
+}
+
+message InstanceIoStreamPong {
+  string request_id = 1;
+}
+
+message InstanceIoFileRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  bool splitting = 3;
+  string path = 4;
+}
+
+message InstanceIoDirectoryRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  string path = 3;
+  int32 offset = 4;
+  int32 limit = 5;
+}
+
+message InstanceIoLogRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  int32 offset = 3;
+  int32 limit = 4;
+}
+
+message InstanceIoNewObjectRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoObjectType type = 3;
+  string base_path = 4;
+  string name = 5;
+}
+
+message InstanceIoUploadRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  string path = 3;
+  int32 total_chunks = 4;
+  int32 chunk = 5;
+  bytes data = 6;
+}
+
+message InstanceIoDeleteRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoObjectType type = 3;
+  string base_path = 4;
+  string name = 5;
+}
+
+message InstanceIoCopyRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoObjectType type = 3;
+  string base_path = 4;
+  string name = 5;
+  string destination = 6;
+}
+
+message InstanceIoMoveRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoObjectType type = 3;
+  string base_path = 4;
+  string name = 5;
+  string destination = 6;
+}
+
+message InstanceIoRenameRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceIoObjectType type = 3;
+  string base_path = 4;
+  string name = 5;
+  string new_name = 6;
+}
+
+message ServerInstanceIoMessage {
+  oneof payload {
+    InstanceIoStreamPong pong = 1;
+    InstanceIoFileRequest file_request = 2;
+    InstanceIoDirectoryRequest directory_request = 3;
+    InstanceIoLogRequest log_request = 4;
+    InstanceIoNewObjectRequest new_object_request = 5;
+    InstanceIoUploadRequest upload_request = 6;
+    InstanceIoDeleteRequest delete_request = 7;
+    InstanceIoCopyRequest copy_request = 8;
+    InstanceIoMoveRequest move_request = 9;
+    InstanceIoRenameRequest rename_request = 10;
+  }
+}

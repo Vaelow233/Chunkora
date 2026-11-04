@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>dotnet-Chunkora.Agent-1c17387f-39cc-44d0-a702-9b5982f11994</UserSecretsId>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+
+        <PublishSingleFile>true</PublishSingleFile>
+        <SelfContained>true</SelfContained>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="DotNetEnv" Version="3.2.0" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.84.0" />
+        <PackageReference Include="Hardware.Info.Aot" Version="110.0.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+        <PackageReference Include="System.CommandLine" Version="2.0.14" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Chunkora.Contracts\Chunkora.Contracts.csproj" />
+    </ItemGroup>
+</Project>

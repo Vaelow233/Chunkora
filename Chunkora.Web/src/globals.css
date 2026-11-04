@@ -1,0 +1,9 @@
+﻿:root {
+    --chart-cpu: #2563eb;
+    --chart-memory: #b45309;
+}
+
+.dark {
+    --chart-cpu: #60a5fa;
+    --chart-memory: #fbbf24;
+}

@@ -1,0 +1,65 @@
+﻿syntax = "proto3";
+
+package chunkora.agent.v1;
+
+option csharp_namespace = "Chunkora.Contracts.Agent.V1";
+
+import "google/protobuf/timestamp.proto";
+
+service InstanceOperationService {
+  rpc ConnectInstanceOperations(stream AgentInstanceOperationMessage) returns (stream ServerInstanceOperationMessage);
+}
+
+enum InstanceOperationType {
+  INSTANCE_OPERATION_TYPE_UNSPECIFIED = 0;
+  INSTANCE_OPERATION_TYPE_START = 1;
+  INSTANCE_OPERATION_TYPE_STOP = 2;
+  INSTANCE_OPERATION_TYPE_RESTART = 3;
+  INSTANCE_OPERATION_TYPE_KILL = 4;
+  INSTANCE_OPERATION_TYPE_EXECUTE = 5;
+}
+
+enum InstanceOperationResult {
+  INSTANCE_OPERATION_SUCCESS = 0;
+  INSTANCE_OPERATION_TYPE_UNSUPPORTED = 1;
+  UNINITIALIZED = 2;
+  INSTANCE_NOT_FOUND = 3;
+  INSTANCE_OPERATION_FAILED = 4;
+}
+
+message InstanceOperationStreamPing {
+  string request_id = 1;
+}
+
+message InstanceOperationResponse {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceOperationType type = 3;
+  InstanceOperationResult code = 4;
+  optional string error = 5;
+}
+
+message AgentInstanceOperationMessage {
+  oneof payload {
+    InstanceOperationStreamPing ping = 1;
+    InstanceOperationResponse response = 2;
+  }
+}
+
+message InstanceOperationStreamPong {
+  string request_id = 1;
+}
+
+message InstanceOperationRequest {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceOperationType type = 3;
+  optional string command = 4;
+}
+
+message ServerInstanceOperationMessage {
+  oneof payload {
+    InstanceOperationStreamPong pong = 1;
+    InstanceOperationRequest request = 2;
+  }
+}
