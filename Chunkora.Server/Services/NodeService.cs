@@ -38,7 +38,7 @@ public class NodeService(
     
     public async Task<Result<NodeDto>> UpdateAsync(UpdateNodeRequest request)
     {
-        if (!currentUser.HasPermission("admin.node.update"))
+        if (!currentUser.HasPermission($"admin.node.{request.Id}.update"))
         {
             return Result<NodeDto>.Failure(UserErrors.NoPermission);
         }

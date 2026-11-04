@@ -33,6 +33,10 @@ export function createPermissionTree(nodes: NodeDto[], instances: InstanceDto[])
                     permission: `admin.node.${item.id}.metrics`,
                 },
                 {
+                    name: `admin.node.${item.id}.update`,
+                    permission: `admin.node.${item.id}.update`,
+                },
+                {
                     name: `admin.node.${item.id}.delete`,
                     permission: `admin.node.${item.id}.delete`,
                 },
@@ -60,6 +64,10 @@ export function createPermissionTree(nodes: NodeDto[], instances: InstanceDto[])
                 {
                     name: `admin.instance.${item.id}.delete`,
                     permission: `admin.instance.${item.id}.delete`,
+                },
+                {
+                    name: `admin.instance.${item.id}.update`,
+                    permission: `admin.instance.${item.id}.update`,
                 },
             ]
         }
@@ -222,6 +230,10 @@ export function createPermissionTree(nodes: NodeDto[], instances: InstanceDto[])
                             {
                                 name: "admin.role.create",
                                 permission: "admin.role.create",
+                            },
+                            {
+                                name: "admin.role.update",
+                                permission: "admin.role.update",
                             },
                             {
                                 name: "admin.role.delete",

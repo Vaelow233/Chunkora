@@ -48,7 +48,7 @@ public class InstanceService(
     
     public async Task<Result<InstanceDto>> UpdateAsync(UpdateInstanceRequest request)
     {
-        if (!currentUser.HasPermission("admin.instance.update"))
+        if (!currentUser.HasPermission($"admin.instance.{request.Id}.update"))
         {
             return Result<InstanceDto>.Failure(UserErrors.NoPermission);
         }
