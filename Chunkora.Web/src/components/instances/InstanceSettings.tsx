@@ -1,12 +1,23 @@
 ﻿import type {InstanceDto} from "@/types/instance.ts";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import {PiSliders} from "react-icons/pi";
-import {Field, FieldGroup, FieldLabel} from "@/components/ui/field.tsx";
-import {useState} from "react";
+import {Field, FieldDescription, FieldGroup, FieldLabel} from "@/components/ui/field.tsx";
+import {useEffect, useState} from "react";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {toast} from "@/components/ui/toast.tsx";
 import {updateInstance} from "@/api/instance.ts";
+import {useQuery} from "@tanstack/react-query";
+import {listNodes} from "@/api/node.ts";
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select.tsx";
 
 interface InstanceSettingsProps {
     id: string
@@ -22,6 +33,23 @@ export function InstanceSettings({id, instance}: InstanceSettingsProps) {
     const [stopCommand, setStopCommand] = useState(instance?.stopCommand ?? "")
     
     const [updating, setUpdating] = useState(false)
+
+    const nodesQuery = useQuery({
+        queryKey: ["nodes"],
+        queryFn: () => listNodes(0, 2147483647),
+    })
+
+    useEffect(() => {
+        if (!nodesQuery.error) {
+            return
+        }
+
+        toast.add({
+            type: "error",
+            title: "Failed to fetch nodes data. You may not update the node of instance because there are no nodes to choose.",
+            description: nodesQuery.error.message,
+        })
+    }, [nodesQuery.error])
     
     const update = async () => {
         setUpdating(true)
@@ -67,8 +95,28 @@ export function InstanceSettings({id, instance}: InstanceSettingsProps) {
                     <FieldGroup>
                         <div className="flex flex-row gap-4">
                             <Field>
-                                <FieldLabel>Node ID</FieldLabel>
-                                <div>{nodeId}</div>
+                                <FieldLabel>Node</FieldLabel>
+                                <Select value={nodeId}
+                                        onValueChange={(newValue) => setNodeId(newValue ?? "")}
+                                        items={(nodesQuery.data?.items ?? []).map(node => ({value: node.id, label: node.name}))}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel>Nodes</SelectLabel>
+                                            {
+                                                nodesQuery.data?.items.map((node) => (
+                                                    <SelectItem key={node.id} value={node.id}>
+                                                        {node.name}
+                                                    </SelectItem>
+                                                ))
+                                            }
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>The node where this instance is hosted. Moving an instance to another node does not automatically migrate its data.</FieldDescription>
                             </Field>
                             <Field>
                                 <FieldLabel>Name</FieldLabel>
@@ -76,6 +124,7 @@ export function InstanceSettings({id, instance}: InstanceSettingsProps) {
                                        onChange={(e) => setName(e.target.value)}
                                        type="text"
                                 />
+                                <FieldDescription>The name used to identify this instance.</FieldDescription>
                             </Field>
                         </div>
                         <Field>
@@ -84,6 +133,7 @@ export function InstanceSettings({id, instance}: InstanceSettingsProps) {
                                    onChange={(e) => setDescription(e.target.value)}
                                    type="text"
                             />
+                            <FieldDescription>The description of this instance.</FieldDescription>
                         </Field>
                         <Field>
                             <FieldLabel>Path</FieldLabel>
@@ -91,6 +141,7 @@ export function InstanceSettings({id, instance}: InstanceSettingsProps) {
                                    onChange={(e) => setPath(e.target.value)}
                                    type="text"
                             />
+                            <FieldDescription>The path to the instance's working directory.</FieldDescription>
                         </Field>
                         <div className="flex flex-row gap-4">
                             <Field>
@@ -99,6 +150,7 @@ export function InstanceSettings({id, instance}: InstanceSettingsProps) {
                                        onChange={(e) => setLaunchCommand(e.target.value)}
                                        type="text"
                                 />
+                                <FieldDescription>The command used to launch this instance.</FieldDescription>
                             </Field>
                             <Field>
                                 <FieldLabel>Stop Command</FieldLabel>
@@ -106,6 +158,7 @@ export function InstanceSettings({id, instance}: InstanceSettingsProps) {
                                        onChange={(e) => setStopCommand(e.target.value)}
                                        type="text"
                                 />
+                                <FieldDescription>The command sent to the instance's standard input (stdin) to stop it.</FieldDescription>
                             </Field>
                         </div>
                     </FieldGroup>
