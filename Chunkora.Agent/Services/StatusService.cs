@@ -53,6 +53,20 @@ public class StatusService(Contracts.Agent.V1.StatusService.StatusServiceClient 
         metadata.Add("Authorization", "Bearer " + agentOptions.Value.Token);
         await statusClient.NotifyOverviewAsync(request, cancellationToken: cancellationToken, headers: metadata);
     }
+
+    public async Task SyncInstanceStatusAsync(Instance instance, InstanceStatus status,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new InstanceStatusMessage
+        {
+            RequestId = Guid.NewGuid().ToString("N"),
+            InstanceId = instance.Id,
+            Status = status,
+        };
+        var metadata = new Metadata();
+        metadata.Add("Authorization", "Bearer " + agentOptions.Value.Token);
+        await statusClient.NotifyInstanceStatusAsync(request, cancellationToken: cancellationToken, headers: metadata);
+    }
     
     private static string GetOSPlatform()
     {

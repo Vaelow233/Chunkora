@@ -6,7 +6,10 @@ using Microsoft.Extensions.Options;
 
 namespace Chunkora.Agent.Services;
 
-public class InstanceService(Chunkora.Contracts.Agent.V1.InstanceService.InstanceServiceClient instanceClient, IOptions<AgentOptions> agentOptions)
+public class InstanceService(
+    Chunkora.Contracts.Agent.V1.InstanceService.InstanceServiceClient instanceClient, 
+    StatusService statusService, 
+    IOptions<AgentOptions> agentOptions)
 {
     private readonly LinkedList<ActionableInstance> _instances = new();
     private readonly SemaphoreSlim _instancesLock = new(1, 1);
@@ -35,7 +38,7 @@ public class InstanceService(Chunkora.Contracts.Agent.V1.InstanceService.Instanc
                         // For exists instance
                         if (originInstance.GetInstance().Id == instance.Id)
                         {
-                            instances.AddLast(ActionableInstance.Create(instance, originInstance));
+                            instances.AddLast(ActionableInstance.Create(instance, originInstance, statusService));
                             _instances.Remove(originInstance);
                             handled = true;
                             break;
@@ -45,7 +48,7 @@ public class InstanceService(Chunkora.Contracts.Agent.V1.InstanceService.Instanc
                     // For new instance
                     if (!handled)
                     {
-                        instances.AddLast(ActionableInstance.Create(instance, null));
+                        instances.AddLast(ActionableInstance.Create(instance, null, statusService));
                     }
                 }
                 

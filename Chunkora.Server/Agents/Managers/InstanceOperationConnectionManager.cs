@@ -1,12 +1,11 @@
 ﻿using System.Collections.Concurrent;
 using Chunkora.Contracts.Agent.V1;
-using Chunkora.Server.Dtos;
 using Instance = Chunkora.Server.Models.Instance;
 using InstanceOperationService = Chunkora.Server.Agents.Services.InstanceOperationService;
 
 namespace Chunkora.Server.Agents.Managers;
 
-public sealed class InstanceOperationConnectionManager
+public sealed class InstanceOperationConnectionManager(ILogger<InstanceOperationConnectionManager> logger)
 {
     private readonly ConcurrentDictionary<Guid, InstanceOperationService> _connections = new(); // nodeId => instanceOperationService
     private readonly ConcurrentDictionary<Guid, InstanceStatus> _instanceStatusMap = new(); // instanceId => instanceStatus
@@ -26,42 +25,33 @@ public sealed class InstanceOperationConnectionManager
     {
         if (message.Response == null || message.Response.Code != InstanceOperationResult.InstanceOperationSuccess)
         {
-            return;
+            logger.LogWarning($"Agent-side instance operation service returned {message.Response}");
         }
+    }
 
-        var newStatus = message.Response.Type switch
-        {
-            InstanceOperationType.Start => InstanceStatus.Running,
-            InstanceOperationType.Stop => InstanceStatus.Stopped,
-            InstanceOperationType.Kill => InstanceStatus.Stopped,
-            InstanceOperationType.Restart => InstanceStatus.Running,
-            _ => _instanceStatusMap.GetValueOrDefault(Guid.Parse(message.Response.InstanceId), InstanceStatus.Stopped)
-        };
-        _instanceStatusMap[Guid.Parse(message.Response.InstanceId)] = newStatus;
+    public void UpdateInstanceStatus(Guid instanceId, InstanceStatus status)
+    {
+        _instanceStatusMap[instanceId] = status;
     }
 
     // Server service side methods
     public async Task StartInstanceAsync(Instance instance)
     {
-        _instanceStatusMap[instance.Id] = InstanceStatus.Starting;
         await SendRequestAsync(instance, InstanceOperationType.Start);
     }
     
     public async Task StopInstanceAsync(Instance instance)
     {
-        _instanceStatusMap[instance.Id] = InstanceStatus.Stopping;
         await SendRequestAsync(instance, InstanceOperationType.Stop);
     }
 
     public async Task RestartInstanceAsync(Instance instance)
     {
-        _instanceStatusMap[instance.Id] = InstanceStatus.Restarting;
         await SendRequestAsync(instance, InstanceOperationType.Restart);
     }
 
     public async Task KillInstanceAsync(Instance instance)
     {
-        _instanceStatusMap[instance.Id] = InstanceStatus.Stopping;
         await SendRequestAsync(instance, InstanceOperationType.Kill);
     }
 

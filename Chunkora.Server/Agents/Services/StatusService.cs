@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Chunkora.Contracts.Agent.V1;
+using Chunkora.Server.Agents.Managers;
 using Chunkora.Server.Models;
 using Grpc.Core;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Chunkora.Server.Agents.Services;
 
 [Authorize(Policy = "AgentOnly")]
-public class StatusService(GlobalDatabaseContext dbContext) : Contracts.Agent.V1.StatusService.StatusServiceBase
+public class StatusService(GlobalDatabaseContext dbContext, InstanceOperationConnectionManager manager) : Contracts.Agent.V1.StatusService.StatusServiceBase
 {
     public override async Task<OverviewResponse> NotifyOverview(Overview request, ServerCallContext context)
     {
@@ -29,6 +30,15 @@ public class StatusService(GlobalDatabaseContext dbContext) : Contracts.Agent.V1
         dbContext.NodeMetrics.Add(nodeMetrics);
         await dbContext.SaveChangesAsync();
         return new OverviewResponse
+        {
+            RequestId = request.RequestId
+        };
+    }
+
+    public override async Task<InstanceStatusResponse> NotifyInstanceStatus(InstanceStatusMessage request, ServerCallContext context)
+    {
+        manager.UpdateInstanceStatus(Guid.Parse(request.InstanceId), request.Status);
+        return new InstanceStatusResponse
         {
             RequestId = request.RequestId
         };

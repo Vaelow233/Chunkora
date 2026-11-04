@@ -1,7 +1,7 @@
 ﻿using System.CommandLine.Parsing;
 using System.Diagnostics;
-using Chunkora.Agent.Utils;
 using Chunkora.Contracts.Agent.V1;
+using StatusService = Chunkora.Agent.Services.StatusService;
 using StreamWriter = System.IO.StreamWriter;
 
 namespace Chunkora.Agent.Models;
@@ -23,10 +23,19 @@ public class ActionableInstance
     private bool _stopped = true;
     private Task _stdoutTask = Task.CompletedTask;
     private Task _stderrTask = Task.CompletedTask;
+    private InstanceStatus _status = InstanceStatus.Stopped;
+    private readonly StatusService _statusService;
 
-    private ActionableInstance(Instance instance)
+    private ActionableInstance(Instance instance, StatusService statusService)
     {
         _instance = instance;
+        _statusService = statusService;
+    }
+
+    private void UpdateStatus(InstanceStatus status)
+    {
+        _status = status;
+        _ = _statusService.SyncInstanceStatusAsync(_instance, status);
     }
 
     private void AppendLog(string line)
@@ -49,6 +58,7 @@ public class ActionableInstance
             return;
         }
 
+        UpdateStatus(InstanceStatus.Starting);
         _instanceLock.Wait();
         var launchCommand = _instance.LaunchCommand;
         var path = _instance.Path;
@@ -84,6 +94,7 @@ public class ActionableInstance
         _stdoutTask = ReadLinesAsync(_process.StandardOutput, _cts.Token);
         _stderrTask = ReadLinesAsync(_process.StandardError, _cts.Token);
         _stopped = false;
+        UpdateStatus(InstanceStatus.Running);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
@@ -97,11 +108,13 @@ public class ActionableInstance
 
         if (_process is not null && !_process.HasExited)
         {
+            UpdateStatus(InstanceStatus.Stopping);
             await WriteAsync(_instance.StopCommand, timeout.Token);
             await _process.WaitForExitAsync(timeout.Token);
         }
 
         await CleanupProcessAsync();
+        UpdateStatus(InstanceStatus.Stopped);
         _stopped = true;
     }
 
@@ -121,6 +134,7 @@ public class ActionableInstance
         _stdout = null;
         _stderr = null;
         _process = null;
+        UpdateStatus(InstanceStatus.Stopped);
         _stopped = true;
         _cts.Dispose();
         _cts = new CancellationTokenSource();
@@ -134,6 +148,7 @@ public class ActionableInstance
         }
 
         await CleanupProcessAsync();
+        UpdateStatus(InstanceStatus.Stopped);
         _stopped = true;
     }
 
@@ -203,11 +218,11 @@ public class ActionableInstance
         return instance;
     }
 
-    public static ActionableInstance Create(Instance instance, ActionableInstance? origin)
+    public static ActionableInstance Create(Instance instance, ActionableInstance? origin, StatusService service)
     {
         if (origin == null)
         {
-            return new ActionableInstance(instance);
+            return new ActionableInstance(instance, service);
         }
 
         origin._instanceLock.Wait();

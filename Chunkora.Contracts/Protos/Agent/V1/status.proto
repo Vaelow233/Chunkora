@@ -6,6 +6,7 @@ option csharp_namespace = "Chunkora.Contracts.Agent.V1";
 
 service StatusService {
   rpc NotifyOverview (Overview) returns (OverviewResponse);
+  rpc NotifyInstanceStatus (InstanceStatusMessage) returns (InstanceStatusResponse);
 }
 
 message Overview {
@@ -21,5 +22,23 @@ message Overview {
 }
 
 message OverviewResponse {
+  string request_id = 1;
+}
+
+enum InstanceStatus {
+  STOPPED = 0;
+  STARTING = 1;
+  RUNNING = 2;
+  STOPPING = 3;
+  RESTARTING = 4;
+}
+
+message InstanceStatusMessage {
+  string request_id = 1;
+  string instance_id = 2;
+  InstanceStatus status = 3;
+}
+
+message InstanceStatusResponse {
   string request_id = 1;
 }

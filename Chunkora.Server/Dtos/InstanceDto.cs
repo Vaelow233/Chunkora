@@ -1,4 +1,5 @@
-﻿using Chunkora.Server.Models;
+﻿using Chunkora.Contracts.Agent.V1;
+using Instance = Chunkora.Server.Models.Instance;
 
 namespace Chunkora.Server.Dtos;
 
