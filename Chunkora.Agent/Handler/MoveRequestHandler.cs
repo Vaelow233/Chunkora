@@ -37,7 +37,7 @@ public class MoveRequestHandler : IRequestHandler<InstanceIoMoveResponse>
         await ((IRequestHandler<InstanceIoMoveResponse>) this).WriteAsync(message, cancellationToken);
     }
 
-    public async Task Handle(ActionableInstance instance)
+    public async Task Handle(IActionableInstance instance)
     {
         try
         {
@@ -49,7 +49,7 @@ public class MoveRequestHandler : IRequestHandler<InstanceIoMoveResponse>
             {
                 var message = new InstanceIoMoveResponse
                 {
-                    Code = InstanceIoResult.InstanceIoObjectIsOccupied,
+                    Code = InstanceIoResult.ObjectIsOccupied,
                     Error = "The object is occupied currently."
                 };
                 await WriteResponse(message);
@@ -70,7 +70,7 @@ public class MoveRequestHandler : IRequestHandler<InstanceIoMoveResponse>
             }
             var finishedMessage = new InstanceIoMoveResponse
             {
-                Code = InstanceIoResult.InstanceIoSuccess
+                Code = InstanceIoResult.Success
             };
             await WriteResponse(finishedMessage);
         }
@@ -78,7 +78,7 @@ public class MoveRequestHandler : IRequestHandler<InstanceIoMoveResponse>
         {
             var errorMessage = new InstanceIoMoveResponse
             {
-                Code = InstanceIoResult.InstanceIoUnknownError,
+                Code = InstanceIoResult.UnknownError,
                 Error = exception.Message
             };
             await WriteResponse(errorMessage);

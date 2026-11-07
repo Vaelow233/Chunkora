@@ -37,7 +37,7 @@ public class NewObjectRequestHandler : IRequestHandler<InstanceIoNewObjectRespon
         await ((IRequestHandler<InstanceIoNewObjectResponse>) this).WriteAsync(message, cancellationToken);
     }
 
-    public async Task Handle(ActionableInstance instance)
+    public async Task Handle(IActionableInstance instance)
     {
         try
         {
@@ -47,7 +47,7 @@ public class NewObjectRequestHandler : IRequestHandler<InstanceIoNewObjectRespon
             {
                 var message = new InstanceIoNewObjectResponse
                 {
-                    Code = InstanceIoResult.InstanceIoObjectIsOccupied,
+                    Code = InstanceIoResult.ObjectIsOccupied,
                     Error = "The object is occupied currently."
                 };
                 await WriteResponse(message);
@@ -62,7 +62,7 @@ public class NewObjectRequestHandler : IRequestHandler<InstanceIoNewObjectRespon
                 }
                 var message = new InstanceIoNewObjectResponse
                 {
-                    Code = InstanceIoResult.InstanceIoSuccess
+                    Code = InstanceIoResult.Success
                 };
                 await WriteResponse(message);
             } else if (Request.Type == InstanceIoObjectType.Directory)
@@ -74,7 +74,7 @@ public class NewObjectRequestHandler : IRequestHandler<InstanceIoNewObjectRespon
                 }
                 var message = new InstanceIoNewObjectResponse
                 {
-                    Code = InstanceIoResult.InstanceIoSuccess
+                    Code = InstanceIoResult.Success
                 };
                 await WriteResponse(message);
             }
@@ -87,7 +87,7 @@ public class NewObjectRequestHandler : IRequestHandler<InstanceIoNewObjectRespon
         {
             var errorMessage = new InstanceIoNewObjectResponse
             {
-                Code = InstanceIoResult.InstanceIoUnknownError,
+                Code = InstanceIoResult.UnknownError,
                 Error = exception.Message
             };
             await WriteResponse(errorMessage);

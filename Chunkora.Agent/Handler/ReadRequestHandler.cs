@@ -38,7 +38,7 @@ public class ReadRequestHandler : IRequestHandler<InstanceIoFileResponse>
         await ((IRequestHandler<InstanceIoFileResponse>) this).WriteAsync(message, cancellationToken);
     }
 
-    public async Task Handle(ActionableInstance instance)
+    public async Task Handle(IActionableInstance instance)
     {
         try
         {
@@ -48,7 +48,7 @@ public class ReadRequestHandler : IRequestHandler<InstanceIoFileResponse>
                 var data = await File.ReadAllBytesAsync(finalPath);
                 var message = new InstanceIoFileResponse
                 {
-                    Code = InstanceIoResult.InstanceIoSuccess,
+                    Code = InstanceIoResult.Success,
                     TotalChunks = 1,
                     Chunk = 0,
                     Data = ByteString.CopyFrom(data)
@@ -65,7 +65,7 @@ public class ReadRequestHandler : IRequestHandler<InstanceIoFileResponse>
                 {
                     var message = new InstanceIoFileResponse
                     {
-                        Code = InstanceIoResult.InstanceIoSuccess,
+                        Code = InstanceIoResult.Success,
                         TotalChunks = 1,
                         Chunk = 0,
                         Data = ByteString.Empty
@@ -84,7 +84,7 @@ public class ReadRequestHandler : IRequestHandler<InstanceIoFileResponse>
                     if (bytesRead == 0) break;
                     var message = new InstanceIoFileResponse
                     {
-                        Code = InstanceIoResult.InstanceIoSuccess,
+                        Code = InstanceIoResult.Success,
                         TotalChunks = (int) chunkCount,
                         Chunk = chunkIndex,
                         Data = ByteString.CopyFrom(buffer, 0, bytesRead)
@@ -98,7 +98,7 @@ public class ReadRequestHandler : IRequestHandler<InstanceIoFileResponse>
         {
             var errorMessage = new InstanceIoFileResponse
             {
-                Code = InstanceIoResult.InstanceIoUnauthorizedPath,
+                Code = InstanceIoResult.UnauthorizedPath,
                 Error = "Unauthorized access path"
             };
             await WriteResponse(errorMessage);
@@ -107,7 +107,7 @@ public class ReadRequestHandler : IRequestHandler<InstanceIoFileResponse>
         {
             var errorMessage = new InstanceIoFileResponse
             {
-                Code = InstanceIoResult.InstanceIoUnknownError,
+                Code = InstanceIoResult.UnknownError,
                 Error = exception.Message
             };
             await WriteResponse(errorMessage);

@@ -39,7 +39,7 @@ public class UploadRequestHandler : IRequestHandler<InstanceIoUploadResponse>
         await ((IRequestHandler<InstanceIoUploadResponse>) this).WriteAsync(message, cancellationToken);
     }
 
-    public async Task Handle(ActionableInstance instance)
+    public async Task Handle(IActionableInstance instance)
     {
         try
         {
@@ -49,7 +49,7 @@ public class UploadRequestHandler : IRequestHandler<InstanceIoUploadResponse>
             {
                 var message = new InstanceIoUploadResponse
                 {
-                    Code = InstanceIoResult.InstanceIoObjectIsOccupied,
+                    Code = InstanceIoResult.ObjectIsOccupied,
                     Error = "The object is occupied currently."
                 };
                 await WriteResponse(message);
@@ -62,7 +62,7 @@ public class UploadRequestHandler : IRequestHandler<InstanceIoUploadResponse>
                 {
                     var message = new InstanceIoUploadResponse
                     {
-                        Code = InstanceIoResult.InstanceIoWriterNotFound,
+                        Code = InstanceIoResult.WriterNotFound,
                         Error = "Cannot find out the writer (maybe the writer has been destroyed)."
                     };
                     await WriteResponse(message);
@@ -90,7 +90,7 @@ public class UploadRequestHandler : IRequestHandler<InstanceIoUploadResponse>
             }
             var finishedMessage = new InstanceIoUploadResponse
             {
-                Code = InstanceIoResult.InstanceIoSuccess,
+                Code = InstanceIoResult.Success,
                 TotalChunks = Request.TotalChunks,
                 Chunk = Request.Chunk
             };
@@ -100,7 +100,7 @@ public class UploadRequestHandler : IRequestHandler<InstanceIoUploadResponse>
         {
             var errorMessage = new InstanceIoUploadResponse
             {
-                Code = InstanceIoResult.InstanceIoUnauthorizedPath,
+                Code = InstanceIoResult.UnauthorizedPath,
                 Error = "Unauthorized access path"
             };
             await WriteResponse(errorMessage);
@@ -109,7 +109,7 @@ public class UploadRequestHandler : IRequestHandler<InstanceIoUploadResponse>
         {
             var errorMessage = new InstanceIoUploadResponse
             {
-                Code = InstanceIoResult.InstanceIoUnknownError,
+                Code = InstanceIoResult.UnknownError,
                 Error = exception.Message
             };
             await WriteResponse(errorMessage);

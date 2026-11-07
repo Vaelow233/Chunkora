@@ -10,6 +10,10 @@ service InstanceService {
   rpc ConnectInstances(SyncInstancesRequest) returns (stream SyncInstancesResponse);
 }
 
+enum InstanceType {
+  HOST = 0;
+}
+
 message Instance {
   string id = 1;
   string node_id = 2;
@@ -20,6 +24,7 @@ message Instance {
   string stop_command = 7;
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp updated_at = 9;
+  InstanceType type = 10;
 }
 
 message SyncInstancesResponse {

@@ -37,7 +37,7 @@ public class RenameRequestHandler : IRequestHandler<InstanceIoRenameResponse>
         await ((IRequestHandler<InstanceIoRenameResponse>) this).WriteAsync(message, cancellationToken);
     }
 
-    public async Task Handle(ActionableInstance instance)
+    public async Task Handle(IActionableInstance instance)
     {
         try
         {
@@ -49,7 +49,7 @@ public class RenameRequestHandler : IRequestHandler<InstanceIoRenameResponse>
             {
                 var message = new InstanceIoRenameResponse
                 {
-                    Code = InstanceIoResult.InstanceIoObjectIsOccupied,
+                    Code = InstanceIoResult.ObjectIsOccupied,
                     Error = "The object is occupied currently."
                 };
                 await WriteResponse(message);
@@ -70,7 +70,7 @@ public class RenameRequestHandler : IRequestHandler<InstanceIoRenameResponse>
             }
             var finishedMessage = new InstanceIoRenameResponse
             {
-                Code = InstanceIoResult.InstanceIoSuccess
+                Code = InstanceIoResult.Success
             };
             await WriteResponse(finishedMessage);
         }
@@ -78,7 +78,7 @@ public class RenameRequestHandler : IRequestHandler<InstanceIoRenameResponse>
         {
             var errorMessage = new InstanceIoRenameResponse
             {
-                Code = InstanceIoResult.InstanceIoUnknownError,
+                Code = InstanceIoResult.UnknownError,
                 Error = exception.Message
             };
             await WriteResponse(errorMessage);

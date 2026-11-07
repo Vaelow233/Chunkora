@@ -37,12 +37,12 @@ public class LogRequestHandler : IRequestHandler<InstanceIoLogResponse>
         await ((IRequestHandler<InstanceIoLogResponse>) this).WriteAsync(message, cancellationToken);
     }
 
-    public async Task Handle(ActionableInstance instance)
+    public async Task Handle(IActionableInstance instance)
     {
         var result = instance.GetLogs(Request.Limit, Request.Offset, out var total);
         var message = new InstanceIoLogResponse
         {
-            Code = InstanceIoResult.InstanceIoSuccess,
+            Code = InstanceIoResult.Success,
             Count = result.Count,
             Lines = { result },
             Total = total

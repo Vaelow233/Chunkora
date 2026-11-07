@@ -2,6 +2,7 @@ using Chunkora.Agent.Configuration;
 using Chunkora.Agent.Services;
 using Chunkora.Agent.Utils;
 using Chunkora.Agent.Workers;
+using Docker.DotNet;
 using Grpc.Net.Client;
 
 DotNetEnv.Env.NoClobber().TraversePath().Load();
@@ -30,6 +31,8 @@ builder.Services.AddHostedService<StatusWorker>();
 builder.Services.AddHostedService<InstanceWorker>();
 builder.Services.AddHostedService<InstanceOperationWorker>();
 builder.Services.AddHostedService<InstanceIoWorker>();
+
+builder.Services.AddSingleton<DockerClient>(_ => new DockerClientConfiguration().CreateClient());
 
 var host = builder.Build();
 

@@ -11,7 +11,7 @@ public class InstanceService(
     StatusService statusService, 
     IOptions<AgentOptions> agentOptions)
 {
-    private readonly LinkedList<ActionableInstance> _instances = new();
+    private readonly LinkedList<IActionableInstance> _instances = new();
     private readonly SemaphoreSlim _instancesLock = new(1, 1);
 
     public async Task SyncInstancesAsync(CancellationToken cancellationToken = default)
@@ -25,11 +25,11 @@ public class InstanceService(
         using var call = instanceClient.ConnectInstances(request, cancellationToken: cancellationToken, headers: metadata);
         await foreach (var response in call.ResponseStream.ReadAllAsync(cancellationToken))
         {
-            List<ActionableInstance> removedInstances;
+            List<IActionableInstance> removedInstances;
             await _instancesLock.WaitAsync(cancellationToken);
             try
             {
-                LinkedList<ActionableInstance> instances = new();
+                LinkedList<IActionableInstance> instances = new();
                 foreach (var instance in response.Instance)
                 {
                     var handled = false;
@@ -38,7 +38,8 @@ public class InstanceService(
                         // For exists instance
                         if (originInstance.GetInstance().Id == instance.Id)
                         {
-                            instances.AddLast(ActionableInstance.Create(instance, originInstance, statusService));
+                            await originInstance.UpdateAsync(instance, cancellationToken);
+                            instances.AddLast(originInstance);
                             _instances.Remove(originInstance);
                             handled = true;
                             break;
@@ -48,7 +49,7 @@ public class InstanceService(
                     // For new instance
                     if (!handled)
                     {
-                        instances.AddLast(ActionableInstance.Create(instance, null, statusService));
+                        instances.AddLast(ActionableInstanceFactory.Create(instance, GetStatusCallback()));
                     }
                 }
                 
@@ -82,7 +83,9 @@ public class InstanceService(
         }
     }
 
-    public ActionableInstance? GetInstance(string instanceId)
+    private Func<Instance, InstanceStatus, Task> GetStatusCallback() => (instance, status) => statusService.SyncInstanceStatusAsync(instance, status);
+
+    public IActionableInstance? GetInstance(string instanceId)
     {
         _instancesLock.Wait();
         foreach (var instance in _instances)

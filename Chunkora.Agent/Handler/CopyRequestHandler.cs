@@ -37,7 +37,7 @@ public class CopyRequestHandler : IRequestHandler<InstanceIoCopyResponse>
         await ((IRequestHandler<InstanceIoCopyResponse>) this).WriteAsync(message, cancellationToken);
     }
 
-    public async Task Handle(ActionableInstance instance)
+    public async Task Handle(IActionableInstance instance)
     {
         try
         {
@@ -49,7 +49,7 @@ public class CopyRequestHandler : IRequestHandler<InstanceIoCopyResponse>
             {
                 var message = new InstanceIoCopyResponse
                 {
-                    Code = InstanceIoResult.InstanceIoObjectIsOccupied,
+                    Code = InstanceIoResult.ObjectIsOccupied,
                     Error = "The object is occupied currently."
                 };
                 await WriteResponse(message);
@@ -70,7 +70,7 @@ public class CopyRequestHandler : IRequestHandler<InstanceIoCopyResponse>
             }
             var finishedMessage = new InstanceIoCopyResponse
             {
-                Code = InstanceIoResult.InstanceIoSuccess
+                Code = InstanceIoResult.Success
             };
             await WriteResponse(finishedMessage);
         }
@@ -78,7 +78,7 @@ public class CopyRequestHandler : IRequestHandler<InstanceIoCopyResponse>
         {
             var errorMessage = new InstanceIoCopyResponse
             {
-                Code = InstanceIoResult.InstanceIoUnknownError,
+                Code = InstanceIoResult.UnknownError,
                 Error = exception.Message
             };
             await WriteResponse(errorMessage);

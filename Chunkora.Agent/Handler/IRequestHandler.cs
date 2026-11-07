@@ -36,7 +36,7 @@ public interface IRequestHandler<TResponse>
 
     Task WriteFailure(InstanceIoResult result, string error, CancellationToken cancellationToken = default);
     
-    Task Handle(ActionableInstance instance);
+    Task Handle(IActionableInstance instance);
     
     public async Task Handle(bool initialized)
     {
@@ -52,6 +52,6 @@ public interface IRequestHandler<TResponse>
             await WriteFailure(InstanceIoResult.InstanceNotFound, "Instance not found");
             return;
         }
-        await Handle(target);
+        await Handle((IActionableInstance)target);
     }
 }

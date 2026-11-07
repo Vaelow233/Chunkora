@@ -1,12 +1,11 @@
 ﻿using System.CommandLine.Parsing;
 using System.Diagnostics;
 using Chunkora.Contracts.Agent.V1;
-using StatusService = Chunkora.Agent.Services.StatusService;
 using StreamWriter = System.IO.StreamWriter;
 
 namespace Chunkora.Agent.Models;
 
-public class ActionableInstance
+public class HostInstance : IActionableInstance
 {
     public SemaphoreSlim LifecycleLock { get; } = new(1, 1);
     private Instance _instance;
@@ -24,18 +23,18 @@ public class ActionableInstance
     private Task _stdoutTask = Task.CompletedTask;
     private Task _stderrTask = Task.CompletedTask;
     private InstanceStatus _status = InstanceStatus.Stopped;
-    private readonly StatusService _statusService;
+    private readonly Func<Instance, InstanceStatus, Task> _statusCallback;
 
-    private ActionableInstance(Instance instance, StatusService statusService)
+    public HostInstance(Instance instance, Func<Instance, InstanceStatus, Task> statusCallback)
     {
         _instance = instance;
-        _statusService = statusService;
+        _statusCallback = statusCallback;
     }
 
     private void UpdateStatus(InstanceStatus status)
     {
-        _status = status;
-        _ = _statusService.SyncInstanceStatusAsync(_instance, status);
+        _status = status; 
+        _statusCallback.Invoke(_instance, status);
     }
 
     private void AppendLog(string line)
@@ -49,6 +48,11 @@ public class ActionableInstance
         }
 
         _logsLock.Release();
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        Start();
     }
 
     public void Start()
@@ -210,24 +214,18 @@ public class ActionableInstance
         }
     }
 
+    public async Task UpdateAsync(Instance instance, CancellationToken cancellationToken = default)
+    {
+        await _instanceLock.WaitAsync(cancellationToken);
+        _instance = instance;
+        _instanceLock.Release();
+    }
+
     public Instance GetInstance()
     {
         _instanceLock.Wait();
         var instance = new Instance(_instance);
         _instanceLock.Release();
         return instance;
-    }
-
-    public static ActionableInstance Create(Instance instance, ActionableInstance? origin, StatusService service)
-    {
-        if (origin == null)
-        {
-            return new ActionableInstance(instance, service);
-        }
-
-        origin._instanceLock.Wait();
-        origin._instance = instance;
-        origin._instanceLock.Release();
-        return origin;
     }
 }

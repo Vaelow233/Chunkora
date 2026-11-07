@@ -38,7 +38,7 @@ public class ListRequestHandler : IRequestHandler<InstanceIoDirectoryResponse>
         await ((IRequestHandler<InstanceIoDirectoryResponse>) this).WriteAsync(message, cancellationToken);
     }
 
-    public async Task Handle(ActionableInstance instance)
+    public async Task Handle(IActionableInstance instance)
     {
         try
         {
@@ -48,7 +48,7 @@ public class ListRequestHandler : IRequestHandler<InstanceIoDirectoryResponse>
             {
                 var errorMessage = new InstanceIoDirectoryResponse
                 {
-                    Code = InstanceIoResult.InstanceIoDirectoryNotFound,
+                    Code = InstanceIoResult.DirectoryNotFound,
                     Error = "Directory not found"
                 };
                 await WriteResponse(errorMessage);
@@ -86,7 +86,7 @@ public class ListRequestHandler : IRequestHandler<InstanceIoDirectoryResponse>
             var newList = await list.ToAsyncEnumerable().Skip(Request.Offset).Take(Request.Limit).ToListAsync();
             var message = new InstanceIoDirectoryResponse
             {
-                Code = InstanceIoResult.InstanceIoSuccess,
+                Code = InstanceIoResult.Success,
                 Total = list.Count,
                 Count = newList.Count,
                 Objects = { newList }
@@ -97,7 +97,7 @@ public class ListRequestHandler : IRequestHandler<InstanceIoDirectoryResponse>
         {
             var errorMessage = new InstanceIoDirectoryResponse
             {
-                Code = InstanceIoResult.InstanceIoUnauthorizedPath,
+                Code = InstanceIoResult.UnauthorizedPath,
                 Error = "Unauthorized access path"
             };
             await WriteResponse(errorMessage);
@@ -106,7 +106,7 @@ public class ListRequestHandler : IRequestHandler<InstanceIoDirectoryResponse>
         {
             var errorMessage = new InstanceIoDirectoryResponse
             {
-                Code = InstanceIoResult.InstanceIoUnknownError,
+                Code = InstanceIoResult.UnknownError,
                 Error = exception.Message
             };
             await WriteResponse(errorMessage);

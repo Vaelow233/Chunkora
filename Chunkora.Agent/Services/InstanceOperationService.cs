@@ -29,7 +29,7 @@ public class InstanceOperationService(
             switch (request.Type)
             {
                 case InstanceOperationType.Start:
-                    target.Start();
+                    await target.StartAsync(cancellationToken);
                     break;
                 case InstanceOperationType.Stop:
                     await target.StopAsync(cancellationToken);
@@ -44,9 +44,9 @@ public class InstanceOperationService(
                     await target.WriteAsync(request.Command, cancellationToken);
                     break;
                 default:
-                    return Reply(request, InstanceOperationResult.InstanceOperationTypeUnsupported);
+                    return Reply(request, InstanceOperationResult.TypeUnsupported);
             }
-            return Reply(request, InstanceOperationResult.InstanceOperationSuccess);
+            return Reply(request, InstanceOperationResult.Success);
         }
         finally
         {

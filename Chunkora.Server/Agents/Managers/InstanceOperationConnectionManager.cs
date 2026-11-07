@@ -23,7 +23,7 @@ public sealed class InstanceOperationConnectionManager(ILogger<InstanceOperation
 
     public async Task HandleResponseAsync(AgentInstanceOperationMessage message)
     {
-        if (message.Response == null || message.Response.Code != InstanceOperationResult.InstanceOperationSuccess)
+        if (message.Response == null || message.Response.Code != InstanceOperationResult.Success)
         {
             logger.LogWarning($"Agent-side instance operation service returned {message.Response}");
         }

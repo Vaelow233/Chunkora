@@ -59,7 +59,7 @@ public class InstanceIoConnectionManager
                     return;
                 }
                 Exception? error = null;
-                if (message.FileResponse.Code != InstanceIoResult.InstanceIoSuccess)
+                if (message.FileResponse.Code != InstanceIoResult.Success)
                 {
                     error = new IOException(message.FileResponse.Error);
                 }
