@@ -1,4 +1,4 @@
-﻿using Chunkora.Agent.Models;
+﻿using Chunkora.Agent.Instances;
 using Chunkora.Contracts.Agent.V1;
 using Grpc.Core;
 using InstanceService = Chunkora.Agent.Services.InstanceService;

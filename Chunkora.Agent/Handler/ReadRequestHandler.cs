@@ -1,4 +1,4 @@
-﻿using Chunkora.Agent.Models;
+﻿using Chunkora.Agent.Instances;
 using Chunkora.Agent.Utils;
 using Chunkora.Contracts.Agent.V1;
 using Google.Protobuf;

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Chunkora.Contracts.Agent.V1;
 using StreamWriter = System.IO.StreamWriter;
 
-namespace Chunkora.Agent.Models;
+namespace Chunkora.Agent.Instances;
 
 public class HostInstance : IActionableInstance
 {
