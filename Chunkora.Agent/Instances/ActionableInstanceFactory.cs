@@ -1,15 +1,24 @@
 ﻿using Chunkora.Contracts.Agent.V1;
+using StatusService = Chunkora.Agent.Services.StatusService;
 
 namespace Chunkora.Agent.Instances;
 
-public static class ActionableInstanceFactory
+public sealed class ActionableInstanceFactory(StatusService statusService, IServiceScopeFactory scopeFactory)
 {
-    public static IActionableInstance Create(Instance instance, Func<Instance, InstanceStatus, Task> statusCallback)
+    private Func<Instance, InstanceStatus, Task> GetStatusCallback() => (instance, status) => statusService.SyncInstanceStatusAsync(instance, status);
+    
+    public async Task<IActionableInstance> Create(Instance instance)
     {
+        var statusCallback = GetStatusCallback();
         return instance.Type switch
         {
+            // For host, the container (instance object) will NOT be created since it isn't persisted
+            // So we should always instantiate a new one
             InstanceType.Host => new HostInstance(instance, statusCallback),
-            _ => throw new NotSupportedException()
+            // For docker, the container may already be created (persistent)
+            // So for created container, we just need to get it directly
+            InstanceType.Docker => await DockerInstance.GetOrCreateContainerAsync(instance, statusCallback, scopeFactory),
+            _ => throw new NotSupportedException($"Unsupported instance type: {instance.Type}")
         };
     }
 }

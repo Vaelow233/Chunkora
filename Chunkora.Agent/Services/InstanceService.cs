@@ -8,7 +8,7 @@ namespace Chunkora.Agent.Services;
 
 public class InstanceService(
     Chunkora.Contracts.Agent.V1.InstanceService.InstanceServiceClient instanceClient, 
-    StatusService statusService, 
+    ActionableInstanceFactory instanceFactory, 
     IOptions<AgentOptions> agentOptions)
 {
     private readonly LinkedList<IActionableInstance> _instances = new();
@@ -49,7 +49,7 @@ public class InstanceService(
                     // For new instance
                     if (!handled)
                     {
-                        instances.AddLast(ActionableInstanceFactory.Create(instance, GetStatusCallback()));
+                        instances.AddLast(await instanceFactory.Create(instance));
                     }
                 }
                 
@@ -73,7 +73,7 @@ public class InstanceService(
                 await instance.LifecycleLock.WaitAsync(cancellationToken);
                 try
                 {
-                    await instance.DisposeAsync();
+                    await instance.DeleteAsync();
                 }
                 finally
                 {
@@ -82,8 +82,6 @@ public class InstanceService(
             }
         }
     }
-
-    private Func<Instance, InstanceStatus, Task> GetStatusCallback() => (instance, status) => statusService.SyncInstanceStatusAsync(instance, status);
 
     public IActionableInstance? GetInstance(string instanceId)
     {

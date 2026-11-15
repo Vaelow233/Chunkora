@@ -8,8 +8,9 @@ public interface IActionableInstance
     Task StopAsync(CancellationToken cancellationToken = default);
     Task RestartAsync(CancellationToken cancellationToken = default);
     Task DisposeAsync();
+    Task DeleteAsync(); // For docker instance, this method will also delete the container that is persistent in docker
     Task WriteAsync(string content, CancellationToken cancellationToken = default);
-    List<string> GetLogs(int limit, int offset, out int total);
+    Task<KeyValuePair<int, List<string>>> GetLogsAsync(int limit, int offset, CancellationToken cancellationToken = default); // pair: total, lines
     Instance GetInstance();
     Task UpdateAsync(Instance instance, CancellationToken cancellationToken = default);
     SemaphoreSlim LifecycleLock { get; }

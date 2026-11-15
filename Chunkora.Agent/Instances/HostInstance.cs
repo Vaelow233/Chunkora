@@ -156,6 +156,11 @@ public class HostInstance : IActionableInstance
         _stopped = true;
     }
 
+    public async Task DeleteAsync()
+    {
+        await DisposeAsync();
+    }
+
     public async Task RestartAsync(CancellationToken cancellationToken = default)
     {
         await StopAsync(cancellationToken);
@@ -212,6 +217,12 @@ public class HostInstance : IActionableInstance
         {
             _logsLock.Release();
         }
+    }
+
+    public async Task<KeyValuePair<int, List<string>>> GetLogsAsync(int limit, int offset, CancellationToken cancellationToken = default)
+    {
+        var lines = GetLogs(limit, offset, out var total);
+        return new KeyValuePair<int, List<string>>(total, lines);
     }
 
     public async Task UpdateAsync(Instance instance, CancellationToken cancellationToken = default)
