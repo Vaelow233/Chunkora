@@ -96,6 +96,7 @@ builder.Services
 builder.Services.AddSingleton<InstanceConnectionManager>();
 builder.Services.AddSingleton<InstanceOperationConnectionManager>();
 builder.Services.AddSingleton<InstanceIoConnectionManager>();
+builder.Services.AddSingleton<InstanceTaskConnectionManager>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<AccessTokenValidator>();
 builder.Services.AddScoped<AgentTokenValidator>();
@@ -130,5 +131,6 @@ app.MapGrpcService<Chunkora.Server.Agents.Services.StatusService>();
 app.MapGrpcService<Chunkora.Server.Agents.Services.InstanceService>();
 app.MapGrpcService<Chunkora.Server.Agents.Services.InstanceOperationService>();
 app.MapGrpcService<Chunkora.Server.Agents.Services.InstanceIoService>();
+app.MapGrpcService<Chunkora.Server.Agents.Services.InstanceTaskService>();
 
 app.Run();

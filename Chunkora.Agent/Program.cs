@@ -14,11 +14,13 @@ var statusClient = new Chunkora.Contracts.Agent.V1.StatusService.StatusServiceCl
 var instanceClient = new Chunkora.Contracts.Agent.V1.InstanceService.InstanceServiceClient(channel);
 var instanceOperationClient = new Chunkora.Contracts.Agent.V1.InstanceOperationService.InstanceOperationServiceClient(channel);
 var instanceIoClient = new Chunkora.Contracts.Agent.V1.InstanceIoService.InstanceIoServiceClient(channel);
+var instanceTaskClient = new Chunkora.Contracts.Agent.V1.InstanceTaskService.InstanceTaskServiceClient(channel);
 
 builder.Services.AddSingleton(statusClient);
 builder.Services.AddSingleton(instanceClient);
 builder.Services.AddSingleton(instanceOperationClient);
 builder.Services.AddSingleton(instanceIoClient);
+builder.Services.AddSingleton(instanceTaskClient);
 
 builder.Services.Configure<AgentOptions>(builder.Configuration.GetSection(AgentOptions.SectionName));
 
@@ -26,11 +28,13 @@ builder.Services.AddSingleton<StatusService>();
 builder.Services.AddSingleton<InstanceService>();
 builder.Services.AddSingleton<InstanceOperationService>();
 builder.Services.AddSingleton<InstanceIoService>();
+builder.Services.AddSingleton<InstanceTaskService>();
 
 builder.Services.AddHostedService<StatusWorker>();
 builder.Services.AddHostedService<InstanceWorker>();
 builder.Services.AddHostedService<InstanceOperationWorker>();
 builder.Services.AddHostedService<InstanceIoWorker>();
+builder.Services.AddHostedService<InstanceTaskWorker>();
 
 builder.Services.AddSingleton<DockerClient>(_ => new DockerClientConfiguration().CreateClient());
 

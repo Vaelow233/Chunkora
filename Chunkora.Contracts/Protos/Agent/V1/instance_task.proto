@@ -1,0 +1,60 @@
+﻿syntax = "proto3";
+
+package chunkora.agent.v1;
+
+option csharp_namespace = "Chunkora.Contracts.Agent.V1";
+
+import "google/protobuf/timestamp.proto";
+
+service InstanceTaskService {
+  rpc ConnectInstanceTasks(SyncInstanceTasksRequest) returns (stream SyncInstanceTasksResponse);
+  rpc SyncRanEvent(SyncRanEventRequest) returns (SyncRanEventResponse);
+}
+
+enum InstanceTaskTrigger {
+  UNSPECIFIED_TRIGGER = 0;
+  ONCE = 1;
+  INTERVAL = 2;
+  SCHEDULED = 3;
+  AGENT_LAUNCH = 4;
+}
+
+enum InstanceTaskAction {
+  UNSPECIFIED_ACTION = 0;
+  STOP = 1;
+  START = 2;
+  KILL = 3;
+  RESTART = 4;
+  SEND_COMMAND = 5;
+}
+
+message InstanceTask {
+  string id = 1;
+  string instance_id = 2;
+  string name = 3;
+  string description = 4;
+  InstanceTaskTrigger trigger = 5;
+  string trigger_info = 6;
+  InstanceTaskAction action = 7;
+  string action_info = 8;
+}
+
+message SyncInstanceTasksResponse {
+  string request_id = 1;
+  google.protobuf.Timestamp generated_time = 2;
+  repeated InstanceTask task = 3;
+}
+
+message SyncInstanceTasksRequest {
+  string request_id = 1;
+}
+
+message SyncRanEventResponse {
+  string request_id = 1;
+}
+
+message SyncRanEventRequest {
+  string request_id = 1;
+  string id = 2;
+  string instance_id = 3;
+}

@@ -1,6 +1,6 @@
 ﻿using Chunkora.Contracts.Agent.V1;
 
-namespace Chunkora.Agent.Instances;
+namespace Chunkora.Agent.Models;
 
 public static class ActionableInstanceFactory
 {

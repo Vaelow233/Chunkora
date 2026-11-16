@@ -15,6 +15,8 @@ public class GlobalDatabaseContext(DbContextOptions<GlobalDatabaseContext> optio
     
     public DbSet<Instance> Instances { get; set; }
     
+    public DbSet<InstanceTask> InstanceTasks { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(entity =>
@@ -43,6 +45,11 @@ public class GlobalDatabaseContext(DbContextOptions<GlobalDatabaseContext> optio
             entity.HasKey(x => x.Id);
         });
         modelBuilder.Entity<Instance>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.Name).IsUnique();
+        });
+        modelBuilder.Entity<InstanceTask>(entity =>
         {
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => x.Name).IsUnique();

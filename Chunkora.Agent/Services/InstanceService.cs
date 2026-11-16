@@ -1,5 +1,5 @@
 ﻿using Chunkora.Agent.Configuration;
-using Chunkora.Agent.Instances;
+using Chunkora.Agent.Models;
 using Chunkora.Contracts.Agent.V1;
 using Grpc.Core;
 using Microsoft.Extensions.Options;
