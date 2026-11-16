@@ -12,6 +12,13 @@ service InstanceService {
 
 enum InstanceType {
   HOST = 0;
+  DOCKER = 1;
+}
+
+message AdditionalConfig {
+  oneof payload {
+    DockerConfig docker_config = 1;
+  }
 }
 
 message Instance {
@@ -25,6 +32,7 @@ message Instance {
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp updated_at = 9;
   InstanceType type = 10;
+  optional AdditionalConfig additional_config = 11;
 }
 
 message SyncInstancesResponse {
@@ -35,4 +43,45 @@ message SyncInstancesResponse {
 
 message SyncInstancesRequest {
   string request_id = 1;
+}
+
+enum RestartPolicy {
+  UNDEFINED = 0;
+  NO = 1;
+  ALWAYS = 2;
+  ON_FAILURE = 3;
+  UNLESS_STOPPED = 4;
+}
+
+message DockerConfig {
+  string name = 1;
+  string image = 2;
+  string command = 3; // TODO: consider using repeated string
+  repeated string environments = 4;
+  string working_dir = 5;
+  string hostname = 6;
+  int64 max_memory_bytes = 7;
+  int64 max_nano_cpus = 8;
+  string network_mode = 9;
+  RestartPolicy restart_policy = 10;
+  repeated DockerPortBinding port_bindings = 11;
+  repeated DockerFileBinding file_bindings = 12;
+}
+
+enum PortProtocol {
+  UNSPECIFIED = 0;
+  TCP = 1;
+  UDP = 2;
+}
+
+message DockerPortBinding {
+  uint32 container_port = 1;
+  PortProtocol container_protocol = 2;
+  string host_ip = 3;
+  uint32 host_port = 4;
+}
+
+message DockerFileBinding {
+  string host_path = 1;
+  string container_path = 2;
 }

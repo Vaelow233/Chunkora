@@ -39,13 +39,13 @@ public class LogRequestHandler : IRequestHandler<InstanceIoLogResponse>
 
     public async Task Handle(IActionableInstance instance)
     {
-        var result = instance.GetLogs(Request.Limit, Request.Offset, out var total);
+        var result = await instance.GetLogsAsync(Request.Limit, Request.Offset);
         var message = new InstanceIoLogResponse
         {
             Code = InstanceIoResult.Success,
-            Count = result.Count,
-            Lines = { result },
-            Total = total
+            Count = result.Value.Count,
+            Lines = { result.Value },
+            Total = result.Key
         };
         await WriteResponse(message);
     }
