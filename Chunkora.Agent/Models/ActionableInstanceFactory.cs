@@ -1,4 +1,5 @@
-﻿using Chunkora.Contracts.Agent.V1;
+﻿using Chunkora.Agent.Instances;
+using Chunkora.Contracts.Agent.V1;
 using StatusService = Chunkora.Agent.Services.StatusService;
 
 namespace Chunkora.Agent.Models;

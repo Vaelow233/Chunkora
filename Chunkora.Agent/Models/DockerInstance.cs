@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Chunkora.Agent.Models;
 using Chunkora.Contracts.Agent.V1;
 using Docker.DotNet;
 using Docker.DotNet.Models;
