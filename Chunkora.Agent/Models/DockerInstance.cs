@@ -16,6 +16,8 @@ public class DockerInstance : IActionableInstance
     private readonly Func<Instance, InstanceStatus, Task> _statusCallback;
     private readonly IServiceScopeFactory _scopeFactory;
     
+    private static string ToDockerProtocol(PortProtocol p) => p == PortProtocol.Udp ? "udp" : "tcp";
+    
     private DockerInstance(string id, Instance instance, Func<Instance, InstanceStatus, Task> statusCallback, IServiceScopeFactory scopeFactory)
     {
         _id = id;
@@ -183,28 +185,21 @@ public class DockerInstance : IActionableInstance
         }
     }
 
-    private async Task EnsureContainerExistsAsync()
+    private static CreateContainerParameters BuildCreateParameters(Instance instance)
     {
-        var config = _instance.AdditionalConfig.DockerConfig;
-        var inspectResponse = await FindContainerAsync(config.Name, _scopeFactory);
-        // Check whether the container is existed
-        if (inspectResponse != null)
-        {
-            return;
-        }
+        var config = instance.AdditionalConfig.DockerConfig;
         // Handle port bindings
         var exposedPorts = new Dictionary<string, EmptyStruct>();
         var portBindings = new Dictionary<string, IList<PortBinding>>();
         foreach (var binding in config.PortBindings)
         {
-            exposedPorts.Add($"{binding.ContainerPort}/{binding.ContainerProtocol}", default);
-            portBindings.Add($"{binding.ContainerPort}/{binding.ContainerProtocol}", [
-                new PortBinding 
-                { 
-                    HostIP = binding.HostIp, 
-                    HostPort = binding.HostPort.ToString()
-                }
-            ]);
+            var key = $"{binding.ContainerPort}/{ToDockerProtocol(binding.ContainerProtocol)}";
+            exposedPorts[key] = default;
+            if (!portBindings.TryGetValue(key, out var list))
+            {
+                portBindings[key] = list = new List<PortBinding>();
+            }
+            list.Add(new PortBinding { HostIP = binding.HostIp, HostPort = binding.HostPort.ToString() });
         }
         // Handle restart policy mapping
         var restartPolicy = ParseRestartPolicy(config.RestartPolicy);
@@ -213,7 +208,7 @@ public class DockerInstance : IActionableInstance
         {
             Name = config.Name,
             Image = config.Image,
-            Cmd = config.Command.Split(" "), // TODO: change this parse method
+            Cmd = instance.LaunchCommand.Split(" "), // TODO: change this parse method
             Env = config.Environments.ToList(),
             WorkingDir = config.WorkingDir,
             Hostname = config.Hostname,
@@ -221,7 +216,9 @@ public class DockerInstance : IActionableInstance
             HostConfig = new HostConfig
             {
                 NetworkMode = config.NetworkMode,
-                Binds = config.FileBindings.ToList().ConvertAll(binding => $"{binding.HostPath}/{binding.ContainerPath}"),
+                Binds = config.FileBindings
+                    .Select(b => $"{b.HostPath}:{b.ContainerPath}{(b.ReadOnly ? ":ro" : "")}")
+                    .ToList(),
                 RestartPolicy = new global::Docker.DotNet.Models.RestartPolicy
                 {
                     Name = restartPolicy
@@ -231,9 +228,21 @@ public class DockerInstance : IActionableInstance
                 Memory = config.MaxMemoryBytes
             }
         };
+        return parameters;
+    }
+
+    private async Task EnsureContainerExistsAsync()
+    {
+        var config = _instance.AdditionalConfig.DockerConfig;
+        var inspectResponse = await FindContainerAsync(config.Name, _scopeFactory);
+        // Check whether the container is existed
+        if (inspectResponse != null)
+        {
+            return;
+        }
         await using var scope = _scopeFactory.CreateAsyncScope();
         var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
-        var response = await docker.Containers.CreateContainerAsync(parameters);
+        var response = await docker.Containers.CreateContainerAsync(BuildCreateParameters(_instance));
         _id = response.ID;
     }
 
@@ -247,48 +256,9 @@ public class DockerInstance : IActionableInstance
         {
             return new DockerInstance(inspectResponse.ID, instance, statusCallback, scopeFactory);
         }
-        // Handle port bindings
-        var exposedPorts = new Dictionary<string, EmptyStruct>();
-        var portBindings = new Dictionary<string, IList<PortBinding>>();
-        foreach (var binding in config.PortBindings)
-        {
-            exposedPorts.Add($"{binding.ContainerPort}/{binding.ContainerProtocol}", default);
-            portBindings.Add($"{binding.ContainerPort}/{binding.ContainerProtocol}", [
-                new PortBinding 
-                { 
-                    HostIP = binding.HostIp, 
-                    HostPort = binding.HostPort.ToString()
-                }
-            ]);
-        }
-        // Handle restart policy mapping
-        var restartPolicy = ParseRestartPolicy(config.RestartPolicy);
-        // Create new container
-        var parameters = new CreateContainerParameters
-        {
-            Name = config.Name,
-            Image = config.Image,
-            Cmd = config.Command.Split(" "), // TODO: change this parse method
-            Env = config.Environments.ToList(),
-            WorkingDir = config.WorkingDir,
-            Hostname = config.Hostname,
-            ExposedPorts = exposedPorts,
-            HostConfig = new HostConfig
-            {
-                NetworkMode = config.NetworkMode,
-                Binds = config.FileBindings.ToList().ConvertAll(binding => $"{binding.HostPath}/{binding.ContainerPath}"),
-                RestartPolicy = new global::Docker.DotNet.Models.RestartPolicy
-                {
-                    Name = restartPolicy
-                },
-                PortBindings = portBindings,
-                NanoCPUs = config.MaxNanoCpus,
-                Memory = config.MaxMemoryBytes
-            }
-        };
         await using var scope = scopeFactory.CreateAsyncScope();
         var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
-        var response = await docker.Containers.CreateContainerAsync(parameters);
+        var response = await docker.Containers.CreateContainerAsync(BuildCreateParameters(instance));
         return new DockerInstance(response.ID, instance, statusCallback, scopeFactory);
     }
 

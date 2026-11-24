@@ -78,6 +78,7 @@ public class InstanceService(
         {
             instance.StopCommand = request.StopCommand;
         }
+        instance.Type = request.Type;
         instance.UpdatedAt = DateTime.UtcNow;
         dbContext.Instances.Update(instance);
         await dbContext.SaveChangesAsync();

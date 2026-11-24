@@ -5,7 +5,6 @@ import {
     ComboboxChips,
     ComboboxChipsInput,
     ComboboxContent,
-    ComboboxEmpty,
     ComboboxItem,
     ComboboxList,
     ComboboxValue,
@@ -60,8 +59,6 @@ export function CreatableCombobox({value, onChange, options, placeholder = "Sear
             </ComboboxChips>
 
             <ComboboxContent>
-                <ComboboxEmpty>No options found</ComboboxEmpty>
-
                 <ComboboxList>
                     {
                         item => (

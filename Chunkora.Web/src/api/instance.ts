@@ -4,7 +4,8 @@ import type {
     CreateInstanceRequest,
     FileContentDto,
     FileObjectDto,
-    InstanceDto,
+    InstanceDto, 
+    UpdateInstanceDockerConfigRequest,
     UpdateInstanceRequest
 } from "@/types/instance.ts";
 import {useUserStore} from "@/stores/auth.ts";
@@ -220,5 +221,12 @@ export function renameDirectory(id: string, basePath: string, name: string, newN
     const params = new URLSearchParams({ "basePath": basePath, "name": name, "newName": newName })
     return api<void>(`/instances/${id}/directories/rename?${params}`, {
         method: "POST"
+    })
+}
+
+export function updateInstanceDockerConfig(data: UpdateInstanceDockerConfigRequest) {
+    return api<InstanceDto>(`/instances/docker`, {
+        method: "PUT",
+        body: JSON.stringify(data),
     })
 }

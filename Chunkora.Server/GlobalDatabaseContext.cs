@@ -48,6 +48,11 @@ public class GlobalDatabaseContext(DbContextOptions<GlobalDatabaseContext> optio
         {
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => x.Name).IsUnique();
+            entity.OwnsOne(x => x.DockerConfig, docker =>
+            {
+                docker.OwnsMany(d => d.PortBindings);
+                docker.OwnsMany(d => d.FileBindings);
+            });
         });
         modelBuilder.Entity<InstanceTask>(entity =>
         {

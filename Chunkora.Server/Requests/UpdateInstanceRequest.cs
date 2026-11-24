@@ -1,4 +1,6 @@
-﻿namespace Chunkora.Server.Requests;
+﻿using Chunkora.Server.Models;
+
+namespace Chunkora.Server.Requests;
 
 public class UpdateInstanceRequest
 {
@@ -9,4 +11,5 @@ public class UpdateInstanceRequest
     public string Path { get; set; } = string.Empty;
     public string LaunchCommand { get; set; } = string.Empty;
     public string StopCommand { get; set; } = string.Empty;
+    public InstanceType Type { get; set; } = InstanceType.Host;
 }

@@ -45,4 +45,8 @@ public static class InstanceErrors
     
     public static Error FailedToRenameFile(string detail = "") => 
         new(41012, "instance.io.failed_to_rename", $"Failed to rename: {detail}");
+
+    public static Error InvalidDockerArguments =
+        new(42001, "instance.docker.invalid_arguments", 
+            "Failed to update docker config because of invalid arguments. Name and image must be non-empty");
 }

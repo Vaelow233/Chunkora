@@ -60,6 +60,9 @@ namespace Chunkora.Server.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -306,6 +309,131 @@ namespace Chunkora.Server.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Chunkora.Server.Models.Instance", b =>
+                {
+                    b.OwnsOne("Chunkora.Server.Models.InstanceDockerConfig", "DockerConfig", b1 =>
+                        {
+                            b1.Property<Guid>("InstanceId")
+                                .HasColumnType("uuid");
+
+                            b1.PrimitiveCollection<List<string>>("Environments")
+                                .IsRequired()
+                                .HasColumnType("text[]");
+
+                            b1.Property<string>("Hostname")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)");
+
+                            b1.Property<string>("Image")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)");
+
+                            b1.Property<long>("MaxMemoryBytes")
+                                .HasColumnType("bigint");
+
+                            b1.Property<long>("MaxNanoCpus")
+                                .HasColumnType("bigint");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)");
+
+                            b1.Property<string>("NetworkMode")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)");
+
+                            b1.Property<int>("RestartPolicy")
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("WorkingDirectory")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)");
+
+                            b1.HasKey("InstanceId");
+
+                            b1.ToTable("Instances");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InstanceId");
+
+                            b1.OwnsMany("Chunkora.Server.Models.DockerFileBinding", "FileBindings", b2 =>
+                                {
+                                    b2.Property<Guid>("InstanceDockerConfigInstanceId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<string>("ContainerPath")
+                                        .IsRequired()
+                                        .HasMaxLength(256)
+                                        .HasColumnType("character varying(256)");
+
+                                    b2.Property<string>("HostPath")
+                                        .IsRequired()
+                                        .HasMaxLength(256)
+                                        .HasColumnType("character varying(256)");
+
+                                    b2.Property<bool>("ReadOnly")
+                                        .HasColumnType("boolean");
+
+                                    b2.HasKey("InstanceDockerConfigInstanceId", "Id");
+
+                                    b2.ToTable("DockerFileBinding");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("InstanceDockerConfigInstanceId");
+                                });
+
+                            b1.OwnsMany("Chunkora.Server.Models.DockerPortBinding", "PortBindings", b2 =>
+                                {
+                                    b2.Property<Guid>("InstanceDockerConfigInstanceId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("integer");
+
+                                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<long>("ContainerPort")
+                                        .HasColumnType("bigint");
+
+                                    b2.Property<int>("ContainerProtocol")
+                                        .HasColumnType("integer");
+
+                                    b2.Property<string>("HostIp")
+                                        .IsRequired()
+                                        .HasMaxLength(256)
+                                        .HasColumnType("character varying(256)");
+
+                                    b2.Property<long>("HostPort")
+                                        .HasColumnType("bigint");
+
+                                    b2.HasKey("InstanceDockerConfigInstanceId", "Id");
+
+                                    b2.ToTable("DockerPortBinding");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("InstanceDockerConfigInstanceId");
+                                });
+
+                            b1.Navigation("FileBindings");
+
+                            b1.Navigation("PortBindings");
+                        });
+
+                    b.Navigation("DockerConfig");
                 });
 #pragma warning restore 612, 618
         }

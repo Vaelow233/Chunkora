@@ -7,6 +7,8 @@
     launchCommand: string
     stopCommand: string
     status: number
+    type: number
+    dockerConfig: DockerConfig | null
 }
 
 export interface CreateInstanceRequest {
@@ -20,6 +22,7 @@ export interface CreateInstanceRequest {
 
 export interface UpdateInstanceRequest extends CreateInstanceRequest {
     id: string
+    type: number
 }
 
 export interface FileObjectDto {
@@ -34,4 +37,35 @@ export interface FileObjectDto {
 export interface FileContentDto {
     path: string
     content: string
+}
+
+export interface DockerPortBinding {
+    containerPort: number
+    containerProtocol: number
+    hostIp: string
+    hostPort: number
+}
+
+export interface DockerFileBinding {
+    hostPath: string
+    containerPath: string
+    readOnly: boolean
+}
+
+export interface DockerConfig {
+    name: string
+    image: string
+    environments: string[]
+    workingDirectory: string
+    hostname: string
+    maxMemoryBytes: number
+    maxNanoCpus: number
+    networkMode: string
+    restartPolicy: number
+    portBindings: DockerPortBinding[]
+    fileBindings: DockerFileBinding[]
+}
+
+export interface UpdateInstanceDockerConfigRequest extends DockerConfig {
+    id: string
 }

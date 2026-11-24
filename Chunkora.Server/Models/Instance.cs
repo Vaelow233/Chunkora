@@ -12,6 +12,10 @@ public class Instance
     [MaxLength(256)] public string LaunchCommand { get; set; } = string.Empty;
     [MaxLength(256)] public string StopCommand { get; set; } = string.Empty; // This command is sending to the instance
     
+    public InstanceType Type { get; set; }
+    
+    public InstanceDockerConfig? DockerConfig { get; set; }
+    
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
