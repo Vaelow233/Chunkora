@@ -27,6 +27,7 @@
 
     <ItemGroup>
         <TrimmerRootAssembly Include="Docker.DotNet" />
+        <TrimmerRootAssembly Include="Newtonsoft.Json" />
     </ItemGroup>
 
     <ItemGroup>
