@@ -11,8 +11,6 @@
         <SelfContained>true</SelfContained>
         <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
         <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-        <PublishTrimmed>true</PublishTrimmed>
-        <PublishAot>true</PublishAot>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,12 +22,7 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
         <PackageReference Include="System.CommandLine" Version="2.0.14" />
     </ItemGroup>
-
-    <ItemGroup>
-        <TrimmerRootAssembly Include="Docker.DotNet" />
-        <TrimmerRootAssembly Include="Newtonsoft.Json" />
-    </ItemGroup>
-
+    
     <ItemGroup>
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
