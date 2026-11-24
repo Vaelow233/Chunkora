@@ -135,7 +135,7 @@ function NodeDetailPage() {
                     <div className="flex flex-row items-center gap-2">
                         <div className="text-2xl font-bold">{nodeQuery.data?.name}</div>
                         {
-                            nodeStatusQuery.data?.instanceConnected && nodeStatusQuery.data?.instanceOperationConnected ? 
+                            nodeStatusQuery.data?.instanceConnected && nodeStatusQuery.data?.instanceOperationConnected && nodeStatusQuery.data?.instanceTaskConnected ? 
                                 <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">Online</Badge> :
                                 <Badge className="bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">Disconnected</Badge>
                         }

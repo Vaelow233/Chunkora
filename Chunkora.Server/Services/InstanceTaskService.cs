@@ -120,11 +120,7 @@ public class InstanceTaskService(
             }
             task.Name = request.Name;
         }
-        if (request.Description != string.Empty)
-        {
-            // TODO: consider whether to do this (or make description required)
-            task.Description = request.Description;
-        }
+        task.Description = request.Description;
         if (request.Trigger != InstanceTaskTrigger.Unspecified)
         {
             task.Trigger = request.Trigger;

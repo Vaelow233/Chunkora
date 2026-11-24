@@ -60,10 +60,9 @@ public sealed class InstanceOperationConnectionManager(ILogger<InstanceOperation
         await SendRequestAsync(instance, InstanceOperationType.Execute, command);
     }
     
-    public async Task<bool> IsNodeConnectedAsync(Guid nodeId)
+    public bool IsNodeConnected(Guid nodeId)
     {
-        _connections.TryGetValue(nodeId, out var service);
-        return service != null;
+        return _connections.ContainsKey(nodeId);
     }
     
     // Common methods

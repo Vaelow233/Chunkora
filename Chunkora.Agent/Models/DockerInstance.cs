@@ -5,7 +5,7 @@ using Docker.DotNet;
 using Docker.DotNet.Models;
 using RestartPolicy = Chunkora.Contracts.Agent.V1.RestartPolicy;
 
-namespace Chunkora.Agent.Instances;
+namespace Chunkora.Agent.Models;
 
 public class DockerInstance : IActionableInstance
 {

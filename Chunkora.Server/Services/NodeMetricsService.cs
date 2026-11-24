@@ -12,6 +12,7 @@ public class NodeMetricsService(
     ICurrentUser currentUser, 
     InstanceConnectionManager instanceConnManager,
     InstanceOperationConnectionManager instanceOperationConnManager,
+    InstanceTaskConnectionManager instanceTaskConnManager,
     GlobalDatabaseContext dbContext)
 {
     public async Task<Result<NodeMetricsDto?>> GetLatestAsync(Guid nodeId)
@@ -57,8 +58,8 @@ public class NodeMetricsService(
         {
             NodeId = nodeId,
             InstanceConnected = instanceConnManager.IsNodeConnected(nodeId),
-            InstanceOperationConnected = await instanceOperationConnManager.IsNodeConnectedAsync(nodeId)
-            // TODO: add instance task connected
+            InstanceOperationConnected = instanceOperationConnManager.IsNodeConnected(nodeId),
+            InstanceTaskConnected = instanceTaskConnManager.IsNodeConnected(nodeId)
         });
     }
 }

@@ -51,11 +51,7 @@ public class RoleService(
         {
             role.Name = request.Name;
         }
-        if (request.Description != string.Empty)
-        {
-            // TODO: consider whether to do this (or make description required)
-            role.Description = request.Description;
-        }
+        role.Description = request.Description;
         role.Permissions = request.Permissions;
         role.UpdatedAt = DateTime.UtcNow;
         dbContext.Roles.Update(role);

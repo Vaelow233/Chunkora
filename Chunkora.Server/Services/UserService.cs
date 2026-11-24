@@ -64,11 +64,7 @@ public class UserService(
         {
             user.HashedPassword = hashedPassword;
         }
-        if (request.Description != string.Empty)
-        {
-            // TODO: consider whether to do this (or make description required)
-            user.Description = request.Description;
-        }
+        user.Description = request.Description;
         user.UpdatedAt = DateTime.UtcNow;
         dbContext.Users.Update(user);
         await dbContext.SaveChangesAsync();
@@ -103,7 +99,7 @@ public class UserService(
 
     public async Task<Result<UserSecureDto>> RefreshAsync(RefreshTokenRequest request)
     {
-        var user = await dbContext.Users.FirstOrDefaultAsync(user => user.Name.Equals(request.Name));
+        var user = await dbContext.Users.FindAsync(request.Id);
         if (user == null)
         {
             return Result<UserSecureDto>.Failure(UserErrors.NotFound);

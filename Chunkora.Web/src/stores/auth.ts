@@ -4,6 +4,7 @@ import type {UserSecureDto} from "@/types/user.ts";
 import type {RoleDto} from "@/types/role.ts";
 
 interface UserStore {
+    id: string | null,
     username: string | null,
     accessToken: string | null,
     accessTokenExpiresAt: string | null,
@@ -27,6 +28,7 @@ interface UserStore {
 export const useUserStore = create<UserStore>()(
     persist(
         (set, get) => ({
+            id: null,
             username: null,
             accessToken: null,
             accessTokenExpiresAt: null,
@@ -38,6 +40,7 @@ export const useUserStore = create<UserStore>()(
 
             login: (user: UserSecureDto) => {
                 set({
+                    id: user.id,
                     username: user.name,
                     accessToken: user.accessToken, 
                     accessTokenExpiresAt: user.accessTokenExpiresAt,
@@ -56,6 +59,7 @@ export const useUserStore = create<UserStore>()(
 
             logout: () => {
                 set({
+                    id: null,
                     username: null, 
                     accessToken: null, 
                     accessTokenExpiresAt: null, 

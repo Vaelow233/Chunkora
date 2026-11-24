@@ -65,11 +65,7 @@ public class InstanceService(
         {
             instance.Name = request.Name;
         }
-        if (request.Description != string.Empty)
-        {
-            // TODO: consider whether to do this (or make description required)
-            instance.Description = request.Description;
-        }
+        instance.Description = request.Description;
         if (request.Path != string.Empty)
         {
             instance.Path = request.Path;

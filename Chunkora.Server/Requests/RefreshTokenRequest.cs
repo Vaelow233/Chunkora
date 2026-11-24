@@ -2,6 +2,6 @@
 
 public class RefreshTokenRequest
 {
-    public required string Name { get; set; } // TODO: consider change this to id
+    public required Guid Id { get; set; }
     public required string RefreshToken { get; set; }
 }

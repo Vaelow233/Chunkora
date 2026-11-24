@@ -39,4 +39,5 @@ export interface NodeStatusDto {
     nodeId: string
     instanceConnected: boolean
     instanceOperationConnected: boolean
+    instanceTaskConnected: boolean
 }

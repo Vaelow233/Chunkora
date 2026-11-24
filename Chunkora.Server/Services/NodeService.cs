@@ -51,11 +51,7 @@ public class NodeService(
         {
             node.Name = request.Name;
         }
-        if (request.Description != string.Empty)
-        {
-            // TODO: consider whether to do this (or make description required)
-            node.Description = request.Description;
-        }
+        node.Description = request.Description;
         if (request.AgentToken != string.Empty)
         {
             node.AgentToken = request.AgentToken;

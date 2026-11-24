@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated")({
     beforeLoad: async ({ location }) => {
         // TODO: remove the cached query result
         const store = useUserStore.getState();
-        if (!store.username || !store.accessToken || !store.refreshToken || !store.accessTokenExpiresAt || 
+        if (!store.id || !store.accessToken || !store.refreshToken || !store.accessTokenExpiresAt || 
             !store.refreshTokenExpiresAt || new Date(store.refreshTokenExpiresAt!) <= new Date()) {
             store.logout()
             throw redirect({
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated")({
         }
         if (new Date(store.accessTokenExpiresAt!) <= new Date()) {
             try {
-                const user = await refresh({name: store.username!, refreshToken: store.refreshToken!})
+                const user = await refresh({id: store.id!, refreshToken: store.refreshToken!})
                 store.login(user)
             } catch (_) {
                 store.logout()
