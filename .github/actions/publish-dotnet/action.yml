@@ -1,0 +1,37 @@
+name: Publish .NET package
+description: Build and upload a self-contained Chunkora package for one target runtime.
+inputs:
+  project:
+    description: Chunkora project (Agent or Server)
+    required: true
+  rid:
+    description: .NET runtime identifier
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Publish and package
+      id: package
+      shell: bash
+      env:
+        PROJECT: Chunkora.${{ inputs.project }}
+        RID: ${{ inputs.rid }}
+      run: |
+        output="$RUNNER_TEMP/$PROJECT-$RID"
+        dotnet publish "$PROJECT/$PROJECT.csproj" -c Release -r "$RID" --self-contained true -o "$output"
+
+        if [[ "$RID" == win-* ]]; then
+          archive="$output.zip"
+          (cd "$output" && zip -qr "$archive" .)
+        else
+          archive="$output.tar.gz"
+          tar -czf "$archive" -C "$output" .
+        fi
+        echo "archive=$archive" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/upload-artifact@v7
+      with:
+        path: ${{ steps.package.outputs.archive }}
+        archive: false
+        if-no-files-found: error
