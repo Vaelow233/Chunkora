@@ -26,6 +26,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <TrimmerRootAssembly Include="Docker.DotNet" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
