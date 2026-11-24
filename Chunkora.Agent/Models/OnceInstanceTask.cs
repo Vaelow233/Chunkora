@@ -29,6 +29,12 @@ public class OnceInstanceTask : IInstanceTask
     {
         _cts = new CancellationTokenSource();
         DateTime.TryParse(_task.TriggerInfo, out var dateTime);
+        var delay = dateTime - DateTime.UtcNow;
+        if (delay < TimeSpan.Zero)
+        {
+            // We shouldn't run the task that should be run earlier
+            return;
+        }
         _ = Task.Run(async () =>
         {
             try
@@ -47,6 +53,10 @@ public class OnceInstanceTask : IInstanceTask
 
     public async Task UpdateAsync(InstanceTask task)
     {
+        if (task.Equals(_task))
+        {
+            return;
+        }
         _task = task;
         if (_cts != null)
         {

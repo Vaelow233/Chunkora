@@ -1,4 +1,5 @@
 using Chunkora.Agent.Configuration;
+using Chunkora.Agent.Models;
 using Chunkora.Agent.Services;
 using Chunkora.Agent.Utils;
 using Chunkora.Agent.Workers;
@@ -29,6 +30,8 @@ builder.Services.AddSingleton<InstanceService>();
 builder.Services.AddSingleton<InstanceOperationService>();
 builder.Services.AddSingleton<InstanceIoService>();
 builder.Services.AddSingleton<InstanceTaskService>();
+
+builder.Services.AddSingleton<ActionableInstanceFactory>();
 
 builder.Services.AddHostedService<StatusWorker>();
 builder.Services.AddHostedService<InstanceWorker>();

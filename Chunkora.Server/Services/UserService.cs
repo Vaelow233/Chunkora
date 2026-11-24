@@ -86,6 +86,18 @@ public class UserService(
         {
             return Result<UserSecureDto>.Failure(UserErrors.IncorrectNameOrPassword);
         }
+        user.AccessToken = User.GenerateToken();
+        user.AccessTokenExpiresAt = DateTime.UtcNow.AddHours(2);
+        user.RefreshToken = User.GenerateToken();
+        user.RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(7);
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException e)
+        {
+            return Result<UserSecureDto>.Failure(GlobalErrors.OfException(e));
+        }
         return Result<UserSecureDto>.Success(UserSecureDto.Create(user));
     }
 

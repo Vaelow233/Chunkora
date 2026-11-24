@@ -24,21 +24,21 @@ public class InstanceTaskController(ILogger<InstanceTaskController> logger, Inst
         return HandleResult(result);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet("{instanceId:guid}/{id:guid}")]
     public async Task<ActionResult<Result<InstanceTaskDto>>> Get(Guid instanceId, Guid id)
     {
         var result = await taskService.GetAsync(instanceId, id);
         return HandleResult(result);
     }
     
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{instanceId:guid}/{id:guid}")]
     public async Task<ActionResult<Result<InstanceTaskDto>>> Delete(Guid instanceId, Guid id)
     {
         var result = await taskService.DeleteAsync(instanceId, id);
         return HandleResult(result);
     }
 
-    [HttpGet]
+    [HttpGet("{instanceId:guid}")]
     public async Task<ActionResult<Result<PageResult<InstanceTaskDto>>>> List(Guid instanceId, int limit, int offset)
     {
         var result = await taskService.ListAsync(instanceId, limit, offset);

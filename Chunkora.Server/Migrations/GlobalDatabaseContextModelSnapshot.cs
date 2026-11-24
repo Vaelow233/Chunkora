@@ -96,7 +96,7 @@ namespace Chunkora.Server.Migrations
                     b.Property<Guid>("InstanceId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("LastRunAt")
+                    b.Property<DateTime?>("LastRunAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
@@ -104,8 +104,11 @@ namespace Chunkora.Server.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<DateTime>("NextRunAt")
+                    b.Property<DateTime?>("NextRunAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("NodeId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Trigger")
                         .HasColumnType("integer");
@@ -123,7 +126,7 @@ namespace Chunkora.Server.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("InstanceTask");
+                    b.ToTable("InstanceTasks");
                 });
 
             modelBuilder.Entity("Chunkora.Server.Models.Node", b =>

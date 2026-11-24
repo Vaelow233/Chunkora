@@ -16,13 +16,13 @@ export function listNodes(offset: number, limit: number) {
 }
 
 export function deleteNode(id: string) {
-    return api<PageResult<NodeDto>>(`/nodes/${id}`, {
+    return api<NodeDto>(`/nodes/${id}`, {
         method: "DELETE"
     })
 }
 
 export function createNode(data: CreateNodeRequest) {
-    return api<PageResult<NodeDto>>(`/nodes`, {
+    return api<NodeDto>(`/nodes`, {
         method: "POST",
         body: JSON.stringify(data),
     })

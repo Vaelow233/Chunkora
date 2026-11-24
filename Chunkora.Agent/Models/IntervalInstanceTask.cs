@@ -48,6 +48,10 @@ public class IntervalInstanceTask : IInstanceTask
     
     public async Task UpdateAsync(InstanceTask task)
     {
+        if (task.Equals(_task))
+        {
+            return;
+        }
         _task = task;
         if (_cts != null)
         {

@@ -13,11 +13,12 @@ import {
 } from "@/components/ui/breadcrumb.tsx";
 import {Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {Button} from "@/components/ui/button.tsx";
-import {InstanceOverview} from "@/components/instances/InstanceOverview.tsx";
 import {InstanceStatusBadge} from "@/components/instances/InstanceStatusBadge.tsx";
 import {InstanceFileManager} from "@/components/instances/InstanceFileManager.tsx";
-import {PiChartLine, PiCube, PiFolder, PiGear, PiPause, PiPlay, PiSkull} from "react-icons/pi";
+import {PiChartLine, PiClockCountdown, PiCube, PiFolder, PiGear, PiPause, PiPlay, PiSkull} from "react-icons/pi";
 import {InstanceSettings} from "@/components/instances/InstanceSettings.tsx";
+import {InstanceTaskManager} from "@/components/instances/InstanceTaskManager";
+import {InstanceOverview} from "@/components/instances/InstanceOverview.tsx";
 
 export const Route = createFileRoute('/_authenticated/instances/$id')({
   component: InstanceDetailPage,
@@ -214,6 +215,10 @@ function InstanceDetailPage() {
                       <PiFolder className="min-w-5 min-h-5" />
                       File Manager
                   </TabsTrigger>
+                  <TabsTrigger value="task-manager" className="text-lg">
+                      <PiClockCountdown className="min-w-5 min-h-5" />
+                      Task Manager
+                  </TabsTrigger>
                   <TabsTrigger value="settings" className="text-lg">
                       <PiGear className="min-w-5 min-h-5" />
                       Settings
@@ -224,6 +229,9 @@ function InstanceDetailPage() {
               </TabsContent>
               <TabsContent value="file-manager" className="mt-4">
                   <InstanceFileManager id={id} />
+              </TabsContent>
+              <TabsContent value="task-manager" className="mt-4">
+                  <InstanceTaskManager id={id} instance={instanceQuery.data} />
               </TabsContent>
               <TabsContent value="settings" className="mt-4">
                   <InstanceSettings id={id} instance={instanceQuery.data} />

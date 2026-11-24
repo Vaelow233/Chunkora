@@ -282,7 +282,7 @@ function NodesPage() {
                                             </FieldGroup>
                                             <DialogFooter>
                                                 <DialogClose render={<Button variant="outline">Cancel</Button>} />
-                                                <Button type="submit" onClick={update} disabled={updating}>Create</Button>
+                                                <Button type="submit" onClick={update} disabled={updating}>Update</Button>
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>

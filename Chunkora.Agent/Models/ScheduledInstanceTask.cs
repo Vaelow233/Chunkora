@@ -30,7 +30,18 @@ public class ScheduledInstanceTask : IInstanceTask
     public async Task ScheduleAsync()
     {
         _cts = new CancellationTokenSource();
-        CronExpression.TryParse(_task.TriggerInfo, out var cron);
+        var fieldCount = _task.TriggerInfo.Split(" ").Length;
+        var format = fieldCount switch
+        {
+            5 => CronFormat.Standard,
+            6 => CronFormat.IncludeSeconds,
+            _ => (CronFormat?)null
+        };
+        if (format == null)
+        {
+            throw new ArgumentException();
+        }
+        CronExpression.TryParse(_task.TriggerInfo, format.Value, out var cron);
         _ = Task.Run(async () =>
         {
             try
@@ -60,6 +71,10 @@ public class ScheduledInstanceTask : IInstanceTask
 
     public async Task UpdateAsync(InstanceTask task)
     {
+        if (task.Equals(_task))
+        {
+            return;
+        }
         _task = task;
         if (_cts != null)
         {

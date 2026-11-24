@@ -58,6 +58,7 @@ public class NodeMetricsService(
             NodeId = nodeId,
             InstanceConnected = instanceConnManager.IsNodeConnected(nodeId),
             InstanceOperationConnected = await instanceOperationConnManager.IsNodeConnectedAsync(nodeId)
+            // TODO: add instance task connected
         });
     }
 }

@@ -30,13 +30,13 @@ export function listUsers(offset: number, limit: number) {
 }
 
 export function deleteUser(id: string) {
-    return api<PageResult<UserDto>>(`/users/${id}`, {
+    return api<UserDto>(`/users/${id}`, {
         method: "DELETE"
     })
 }
 
 export function createUser(data: CreateUserRequest) {
-    return api<PageResult<UserDto>>(`/users`, {
+    return api<UserDto>(`/users`, {
         method: "POST",
         body: JSON.stringify(data),
     })

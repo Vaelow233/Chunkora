@@ -105,6 +105,7 @@ builder.Services.AddScoped<RoleService>();
 builder.Services.AddScoped<NodeService>();
 builder.Services.AddScoped<NodeMetricsService>();
 builder.Services.AddScoped<InstanceService>();
+builder.Services.AddScoped<InstanceTaskService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddGrpc();

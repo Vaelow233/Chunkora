@@ -37,11 +37,11 @@ public class InstanceTaskService(
         switch (request.Trigger)
         {
             case InstanceTaskTrigger.Once:
-                if (!DateTime.TryParse(triggerInfo, out var nonNullNextRunAt))
+                if (!DateTimeOffset.TryParse(triggerInfo, out var nonNullNextRunAt))
                 {
                     return Result<InstanceTaskDto>.Failure(InstanceTaskErrors.InvalidTriggerInfo);
                 }
-                nextRunAt = nonNullNextRunAt;
+                nextRunAt = nonNullNextRunAt.UtcDateTime;
                 break;
             case InstanceTaskTrigger.Interval:
                 if (!long.TryParse(triggerInfo, out var interval))
@@ -51,7 +51,14 @@ public class InstanceTaskService(
                 nextRunAt = DateTime.UtcNow.AddSeconds(interval);
                 break;
             case InstanceTaskTrigger.Scheduled:
-                if (!CronExpression.TryParse(triggerInfo, out var exp))
+                var fieldCount = triggerInfo.Split(" ").Length;
+                var format = fieldCount switch
+                {
+                    5 => CronFormat.Standard,
+                    6 => CronFormat.IncludeSeconds,
+                    _ => (CronFormat?)null
+                };
+                if (format == null || !CronExpression.TryParse(triggerInfo, format.Value, out var exp))
                 {
                     return Result<InstanceTaskDto>.Failure(InstanceTaskErrors.InvalidTriggerInfo);
                 }
@@ -139,11 +146,11 @@ public class InstanceTaskService(
         switch (request.Trigger)
         {
             case InstanceTaskTrigger.Once:
-                if (!DateTime.TryParse(triggerInfo, out var nonNullNextRunAt))
+                if (!DateTimeOffset.TryParse(triggerInfo, out var nonNullNextRunAt))
                 {
                     return Result<InstanceTaskDto>.Failure(InstanceTaskErrors.InvalidTriggerInfo);
                 }
-                nextRunAt = nonNullNextRunAt;
+                nextRunAt = nonNullNextRunAt.UtcDateTime;
                 break;
             case InstanceTaskTrigger.Interval:
                 if (!long.TryParse(triggerInfo, out var interval))
@@ -153,7 +160,14 @@ public class InstanceTaskService(
                 nextRunAt = DateTime.UtcNow.AddSeconds(interval);
                 break;
             case InstanceTaskTrigger.Scheduled:
-                if (!CronExpression.TryParse(triggerInfo, out var exp))
+                var fieldCount = triggerInfo.Split(" ").Length;
+                var format = fieldCount switch
+                {
+                    5 => CronFormat.Standard,
+                    6 => CronFormat.IncludeSeconds,
+                    _ => (CronFormat?)null
+                };
+                if (format == null || !CronExpression.TryParse(triggerInfo, format.Value, out var exp))
                 {
                     return Result<InstanceTaskDto>.Failure(InstanceTaskErrors.InvalidTriggerInfo);
                 }

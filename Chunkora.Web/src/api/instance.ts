@@ -16,13 +16,13 @@ export function listInstances(offset: number, limit: number) {
 }
 
 export function deleteInstance(id: string) {
-    return api<PageResult<InstanceDto>>(`/instances/${id}`, {
+    return api<InstanceDto>(`/instances/${id}`, {
         method: "DELETE"
     })
 }
 
 export function createInstance(data: CreateInstanceRequest) {
-    return api<PageResult<InstanceDto>>(`/instances`, {
+    return api<InstanceDto>(`/instances`, {
         method: "POST",
         body: JSON.stringify(data),
     })

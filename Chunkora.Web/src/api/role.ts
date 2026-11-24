@@ -15,13 +15,13 @@ export function listRoles(offset: number, limit: number) {
 }
 
 export function deleteRole(id: string) {
-    return api<PageResult<RoleDto>>(`/roles/${id}`, {
+    return api<RoleDto>(`/roles/${id}`, {
         method: "DELETE"
     })
 }
 
 export function createRole(data: CreateRoleRequest) {
-    return api<PageResult<RoleDto>>(`/roles`, {
+    return api<RoleDto>(`/roles`, {
         method: "POST",
         body: JSON.stringify(data),
     })
