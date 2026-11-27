@@ -116,8 +116,9 @@ public class HostInstance : IActionableInstance
             _stopRequested = true;
             UpdateStatus(InstanceStatus.Stopping);
             await _instanceLock.WaitAsync(cancellationToken);
-            await WriteAsync(_instance.StopCommand, cancellationToken);
+            var command = _instance.StopCommand;
             _instanceLock.Release();
+            await WriteAsync(command, cancellationToken);
             await _monitorTask.WaitAsync(cancellationToken);
         }
     }

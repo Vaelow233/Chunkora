@@ -164,6 +164,10 @@ public class DockerInstance : IActionableInstance
             await EnsureContainerExistsAsync();
             await using var scope = _scopeFactory.CreateAsyncScope();
             var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
+            await docker.Containers.UpdateContainerAsync(_id, new ContainerUpdateParameters { 
+                RestartPolicy = new global::Docker.DotNet.Models.RestartPolicy 
+                    { Name = ParseRestartPolicy(_instance.AdditionalConfig.DockerConfig.RestartPolicy) }
+            }, cancellationToken); // To ensure that the container can be stopped (instead of restarting by docker)
             await docker.Containers.StartContainerAsync(_id, new ContainerStartParameters(), cancellationToken);
         }
         finally
@@ -183,7 +187,13 @@ public class DockerInstance : IActionableInstance
             await EnsureContainerExistsAsync();
             await using var scope = _scopeFactory.CreateAsyncScope();
             var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
-            await docker.Containers.StopContainerAsync(_id, new ContainerStopParameters(), timeout.Token);
+            await docker.Containers.UpdateContainerAsync(_id, new ContainerUpdateParameters { 
+                RestartPolicy = new global::Docker.DotNet.Models.RestartPolicy { Name = RestartPolicyKind.No } 
+            }, cancellationToken);
+            await _instanceLock.WaitAsync(cancellationToken);
+            var command = _instance.StopCommand;
+            _instanceLock.Release();
+            await WriteAsync(command, cancellationToken);
         }
         finally
         {
