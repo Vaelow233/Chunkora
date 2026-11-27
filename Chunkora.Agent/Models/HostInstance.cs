@@ -19,9 +19,10 @@ public class HostInstance : IActionableInstance
     private readonly Queue<string> _logs = new();
     private int _logTotal;
     private readonly SemaphoreSlim _logsLock = new(1, 1);
-    private bool _stopped = true;
+    private volatile bool _stopRequested;
     private Task _stdoutTask = Task.CompletedTask;
     private Task _stderrTask = Task.CompletedTask;
+    private Task _monitorTask = Task.CompletedTask;
     private InstanceStatus _status = InstanceStatus.Stopped;
     private readonly Func<Instance, InstanceStatus, Task> _statusCallback;
 
@@ -33,8 +34,10 @@ public class HostInstance : IActionableInstance
 
     private void UpdateStatus(InstanceStatus status)
     {
-        _status = status; 
+        _status = status;
+        _instanceLock.Wait();
         _statusCallback.Invoke(_instance, status);
+        _instanceLock.Release();
     }
 
     private void AppendLog(string line)
@@ -57,7 +60,7 @@ public class HostInstance : IActionableInstance
 
     public void Start()
     {
-        if (!_stopped)
+        if (_status != InstanceStatus.Stopped)
         {
             return;
         }
@@ -97,29 +100,26 @@ public class HostInstance : IActionableInstance
         _stdin = _process.StandardInput;
         _stdoutTask = ReadLinesAsync(_process.StandardOutput, _cts.Token);
         _stderrTask = ReadLinesAsync(_process.StandardError, _cts.Token);
-        _stopped = false;
+        _stopRequested = false;
         UpdateStatus(InstanceStatus.Running);
+        _monitorTask = MonitorAsync(_process);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(30));
-        if (_stopped)
+        if (_stopRequested)
         {
             return;
         }
-
         if (_process is not null && !_process.HasExited)
         {
+            _stopRequested = true;
             UpdateStatus(InstanceStatus.Stopping);
-            await WriteAsync(_instance.StopCommand, timeout.Token);
-            await _process.WaitForExitAsync(timeout.Token);
+            await _instanceLock.WaitAsync(cancellationToken);
+            await WriteAsync(_instance.StopCommand, cancellationToken);
+            _instanceLock.Release();
+            await _monitorTask.WaitAsync(cancellationToken);
         }
-
-        await CleanupProcessAsync();
-        UpdateStatus(InstanceStatus.Stopped);
-        _stopped = true;
     }
 
     private async Task CleanupProcessAsync()
@@ -138,10 +138,10 @@ public class HostInstance : IActionableInstance
         _stdout = null;
         _stderr = null;
         _process = null;
-        UpdateStatus(InstanceStatus.Stopped);
-        _stopped = true;
         _cts.Dispose();
         _cts = new CancellationTokenSource();
+        _stopRequested = false;
+        UpdateStatus(InstanceStatus.Stopped);
     }
 
     public async Task DisposeAsync()
@@ -150,10 +150,6 @@ public class HostInstance : IActionableInstance
         {
             _process.Kill();
         }
-
-        await CleanupProcessAsync();
-        UpdateStatus(InstanceStatus.Stopped);
-        _stopped = true;
     }
 
     public async Task DeleteAsync()
@@ -180,6 +176,20 @@ public class HostInstance : IActionableInstance
         {
 
         }
+    }
+
+    private async Task MonitorAsync(Process process)
+    {
+        await process.WaitForExitAsync();
+        try
+        {
+            await Task.WhenAll(_stdoutTask, _stderrTask).WaitAsync(TimeSpan.FromSeconds(3));
+        }
+        catch (TimeoutException)
+        {
+            
+        }
+        await CleanupProcessAsync();
     }
 
     public async Task WriteAsync(string content, CancellationToken cancellationToken = default)
@@ -225,7 +235,7 @@ public class HostInstance : IActionableInstance
         return new KeyValuePair<int, List<string>>(total, lines);
     }
 
-    public async Task UpdateAsync(Instance instance, CancellationToken cancellationToken = default)
+    public async Task UpdateConfigAsync(Instance instance, CancellationToken cancellationToken = default)
     {
         await _instanceLock.WaitAsync(cancellationToken);
         _instance = instance;

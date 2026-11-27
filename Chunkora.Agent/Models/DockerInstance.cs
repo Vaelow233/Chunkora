@@ -1,5 +1,6 @@
-﻿using System.Text;
-using Chunkora.Agent.Models;
+﻿using System.CommandLine.Parsing;
+using System.Text;
+using System.Threading.Channels;
 using Chunkora.Contracts.Agent.V1;
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -13,8 +14,16 @@ public class DockerInstance : IActionableInstance
     private Instance _instance;
     private readonly SemaphoreSlim _instanceLock = new(1, 1);
     private string _id;
-    private readonly Func<Instance, InstanceStatus, Task> _statusCallback;
     private readonly IServiceScopeFactory _scopeFactory;
+    private Task _monitorTask = Task.CompletedTask;
+    private readonly CancellationTokenSource _monitorCts = new();
+    private readonly Channel<Message> _events = Channel.CreateUnbounded<Message>(new UnboundedChannelOptions { SingleReader = true });
+    private InstanceStatus _status = InstanceStatus.Stopped;
+    private readonly Func<Instance, InstanceStatus, Task> _statusCallback;
+    private enum Intent { None, Stopping, Restarting }
+    private volatile Intent _intent;
+    
+    private static readonly HashSet<string> LifecycleActions = ["start", "die", "oom", "restart", "pause", "unpause", "destroy"];
     
     private static string ToDockerProtocol(PortProtocol p) => p == PortProtocol.Udp ? "udp" : "tcp";
     
@@ -24,6 +33,71 @@ public class DockerInstance : IActionableInstance
         _instance = instance;
         _statusCallback = statusCallback;
         _scopeFactory = scopeFactory;
+        _monitorTask = Task.WhenAll(ProduceAsync(_monitorCts.Token), ConsumeAsync(_monitorCts.Token));
+    }
+    
+    private async Task ProduceAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
+                var parameters = new ContainerEventsParameters
+                {
+                    Filters = new Dictionary<string, IDictionary<string, bool>>
+                    {
+                        ["type"] = new Dictionary<string, bool> { ["container"] = true },
+                        ["container"] = new Dictionary<string, bool> { [_id] = true },
+                    }
+                };
+                using var iterCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                var stream = docker.System.MonitorEventsAsync(parameters,
+                    new Progress<Message>(m => _events.Writer.TryWrite(m)), iterCts.Token);
+                try
+                {
+                    await SyncStatusAsync(iterCts.Token);
+                    await stream;
+                }
+                finally
+                {
+                    await iterCts.CancelAsync();
+                    await Task.WhenAny(stream);
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception)
+            {
+                // TODO: log the exception
+            }
+            await Task.Delay(TimeSpan.FromSeconds(1), ct);
+        }
+    }
+
+    private async Task ConsumeAsync(CancellationToken ct)
+    {
+        try
+        {
+            await foreach (var msg in _events.Reader.ReadAllAsync(ct))
+            {
+                if (LifecycleActions.Contains(msg.Action) || msg.Action?.StartsWith("health_status") == true)
+                {
+                    try
+                    {
+                        await SyncStatusAsync(ct);
+                    }
+                    catch (Exception e)
+                    {
+                        // TODO: log the exception
+                    }
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
     }
     
     public Instance GetInstance()
@@ -36,53 +110,111 @@ public class DockerInstance : IActionableInstance
     
     private void UpdateStatus(InstanceStatus status)
     {
+        _status = status;
+        _instanceLock.Wait();
         _statusCallback.Invoke(_instance, status);
+        _instanceLock.Release();
+    }
+
+    private void UpdateStatus(ContainerState state)
+    {
+        if (_intent == Intent.Restarting)
+        {
+            UpdateStatus(InstanceStatus.Restarting);
+            return;
+        }
+        if (_intent == Intent.Stopping && state.Running)
+        {
+            UpdateStatus(InstanceStatus.Stopping);
+            return;
+        }
+        if (state.Restarting)
+        {
+            UpdateStatus(InstanceStatus.Restarting);
+            return;
+        }
+        if (state.Running)
+        {
+            UpdateStatus(InstanceStatus.Running);
+            return;
+        }
+        UpdateStatus(InstanceStatus.Stopped);
+    }
+    
+    private async Task SyncStatusAsync(CancellationToken ct = default)
+    {
+        var inspectResponse = await FindContainerAsync(_id, _scopeFactory, ct);
+        if (inspectResponse != null)
+        {
+            _id = inspectResponse.ID;
+            UpdateStatus(inspectResponse.State);
+        }
+        else
+        {
+            UpdateStatus(InstanceStatus.Stopped);
+        }
     }
     
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
+        _intent = Intent.None;
         UpdateStatus(InstanceStatus.Starting);
-        await EnsureContainerExistsAsync();
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
-        var started = await docker.Containers.StartContainerAsync(_id, new ContainerStartParameters(), cancellationToken);
-        if (!started)
+        try
         {
-            throw new Exception("Could not start the container");
+            await EnsureContainerExistsAsync();
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
+            await docker.Containers.StartContainerAsync(_id, new ContainerStartParameters(), cancellationToken);
         }
-        UpdateStatus(InstanceStatus.Running);
+        finally
+        {
+            await SyncStatusAsync(cancellationToken);
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
+        _intent = Intent.Stopping;
         UpdateStatus(InstanceStatus.Stopping);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(30));
-        await EnsureContainerExistsAsync();
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
-        var stopped = await docker.Containers.StopContainerAsync(_id, new ContainerStopParameters(), timeout.Token);
-        if (!stopped)
+        try
         {
-            throw new Exception("Could not stop the container");
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+            await EnsureContainerExistsAsync();
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
+            await docker.Containers.StopContainerAsync(_id, new ContainerStopParameters(), timeout.Token);
         }
-        UpdateStatus(InstanceStatus.Stopped);
+        finally
+        {
+            _intent = Intent.None;
+            await SyncStatusAsync(cancellationToken);
+        }
     }
 
     public async Task RestartAsync(CancellationToken cancellationToken = default)
     {
+        _intent = Intent.Restarting;
         UpdateStatus(InstanceStatus.Restarting);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(30));
-        await EnsureContainerExistsAsync();
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
-        await docker.Containers.RestartContainerAsync(_id, new ContainerRestartParameters(), timeout.Token);
-        UpdateStatus(InstanceStatus.Running);
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+            await EnsureContainerExistsAsync();
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
+            await docker.Containers.RestartContainerAsync(_id, new ContainerRestartParameters(), timeout.Token);
+        }
+        finally
+        {
+            _intent = Intent.None;
+            await SyncStatusAsync(cancellationToken);
+        }
     }
 
     public async Task DisposeAsync()
     {
+        await _monitorCts.CancelAsync();
         await EnsureContainerExistsAsync();
         await using var scope = _scopeFactory.CreateAsyncScope();
         var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
@@ -92,12 +224,14 @@ public class DockerInstance : IActionableInstance
 
     public async Task DeleteAsync()
     {
+        await _monitorCts.CancelAsync();
         await EnsureContainerExistsAsync();
         await using var scope = _scopeFactory.CreateAsyncScope();
         var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
         await docker.Containers.KillContainerAsync(_id, new ContainerKillParameters());
-        await docker.Containers.RemoveContainerAsync(_id, new ContainerRemoveParameters());
+        await _monitorCts.CancelAsync();
         UpdateStatus(InstanceStatus.Stopped);
+        await docker.Containers.RemoveContainerAsync(_id, new ContainerRemoveParameters());
     }
 
     public async Task WriteAsync(string content, CancellationToken cancellationToken = default)
@@ -105,12 +239,13 @@ public class DockerInstance : IActionableInstance
         await EnsureContainerExistsAsync();
         await using var scope = _scopeFactory.CreateAsyncScope();
         var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
-        using var stream = await docker.Containers.AttachContainerAsync(_id, true, new ContainerAttachParameters(), cancellationToken);
+        using var stream = await docker.Containers.AttachContainerAsync(_id, false, 
+            new ContainerAttachParameters { Stream = true, Stdin = true }, cancellationToken);
         if (stream == null)
         {
             throw new Exception("Failed to attach the container and get the stream");
         }
-        var bytes = Encoding.UTF8.GetBytes(content);
+        var bytes = Encoding.UTF8.GetBytes(content + "\n");
         await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken);
     }
 
@@ -119,7 +254,7 @@ public class DockerInstance : IActionableInstance
         await EnsureContainerExistsAsync();
         await using var scope = _scopeFactory.CreateAsyncScope();
         var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
-        using var stream = await docker.Containers.GetContainerLogsAsync(_id, true, new ContainerLogsParameters 
+        using var stream = await docker.Containers.GetContainerLogsAsync(_id, false, new ContainerLogsParameters 
             {
                 ShowStdout = true,
                 ShowStderr = true,
@@ -131,9 +266,19 @@ public class DockerInstance : IActionableInstance
         {
             throw new Exception("Failed to get the logs of the container");
         }
-        var (stdout, _) = await stream.ReadOutputToEndAsync(cancellationToken);
+        var sb = new StringBuilder();
+        var decoder = Encoding.UTF8.GetDecoder();
+        var buf = new byte[8192];
+        var chars = new char[8192];
+        while (true)
+        {
+            var r = await stream.ReadOutputAsync(buf, 0, buf.Length, cancellationToken);
+            if (r.EOF) break;
+            var n = decoder.GetChars(buf, 0, r.Count, chars, 0);
+            sb.Append(chars, 0, n);
+        }
         var lines = new List<string>();
-        using var reader = new StringReader(stdout);
+        using var reader = new StringReader(sb.ToString());
         string? line;
         while ((line = await reader.ReadLineAsync(cancellationToken)) != null)
         {
@@ -142,11 +287,13 @@ public class DockerInstance : IActionableInstance
         return new KeyValuePair<int, List<string>>(lines.Count, lines.Skip(offset).Take(limit).ToList());
     }
 
-    public async Task UpdateAsync(Instance instance, CancellationToken cancellationToken = default)
+    public async Task UpdateConfigAsync(Instance instance, CancellationToken cancellationToken = default)
     {
         await using var scope = _scopeFactory.CreateAsyncScope();
         var docker = scope.ServiceProvider.GetRequiredService<DockerClient>();
+        await _instanceLock.WaitAsync(cancellationToken);
         _instance = instance;
+        _instanceLock.Release();
         try
         {
             var container = await docker.Containers.InspectContainerAsync(_id, cancellationToken);
@@ -203,12 +350,14 @@ public class DockerInstance : IActionableInstance
         }
         // Handle restart policy mapping
         var restartPolicy = ParseRestartPolicy(config.RestartPolicy);
+        // Handle launch command parsing
+        var commands = CommandLineParser.SplitCommandLine(instance.LaunchCommand).ToArray();
         // Create new container
         var parameters = new CreateContainerParameters
         {
             Name = config.Name,
             Image = config.Image,
-            Cmd = instance.LaunchCommand.Split(" "), // TODO: change this parse method
+            Cmd = commands.Length == 0 ? null : commands,
             Env = config.Environments.ToList(),
             WorkingDir = config.WorkingDir,
             Hostname = config.Hostname,
@@ -226,7 +375,9 @@ public class DockerInstance : IActionableInstance
                 PortBindings = portBindings,
                 NanoCPUs = config.MaxNanoCpus,
                 Memory = config.MaxMemoryBytes
-            }
+            },
+            OpenStdin = true,
+            Tty = false
         };
         return parameters;
     }
