@@ -4,10 +4,55 @@
     build:
       context: .
       dockerfile: Chunkora.Server/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      HttpsRedirectionEnabled: "false"
+      ConnectionStrings__PostgreSQL: "${ConnectionStrings__PostgreSQL:?required}"
+      BootstrapAdmin__Password: "${BootstrapAdmin__Password:-}"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
   chunkora.agent:
     image: chunkora.agent
     build:
       context: .
       dockerfile: Chunkora.Agent/Dockerfile
-
+    profiles: [agent]
+    environment:
+      Agent__ServerAddress: http://chunkora.server:5201
+      Agent__Token: "${Agent__Token:-}"
+  
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: chunkora
+      POSTGRES_USER: chunkora
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?required}"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U chunkora -d chunkora"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+  
+  web:
+    build:
+      context: .
+      dockerfile: Chunkora.Web/Dockerfile
+    environment:
+      CHUNKORA_WEB_DOMAIN: "${CHUNKORA_WEB_DOMAIN:?required}"
+      CHUNKORA_AGENT_DOMAIN: "${CHUNKORA_AGENT_DOMAIN:?required}"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+    restart: unless-stopped
+  
+volumes:
+  postgres-data:
+  caddy-data:

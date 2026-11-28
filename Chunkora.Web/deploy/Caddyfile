@@ -1,0 +1,16 @@
+﻿{$CHUNKORA_WEB_DOMAIN} {
+	@api path /api /api/*
+	handle @api {
+		reverse_proxy chunkora.server:5131
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+{$CHUNKORA_AGENT_DOMAIN} {
+	reverse_proxy h2c://chunkora.server:5201
+}

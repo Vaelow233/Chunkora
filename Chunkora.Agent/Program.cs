@@ -10,7 +10,7 @@ DotNetEnv.Env.NoClobber().TraversePath().Load();
 
 var builder = Host.CreateApplicationBuilder(args);
 
-using var channel = GrpcChannel.ForAddress(builder.Configuration["Agent:ServerAddress"] ?? "http://localhost:50051");
+using var channel = GrpcChannel.ForAddress(builder.Configuration["Agent:ServerAddress"] ?? AgentOptions.DefaultServerAddress);
 var statusClient = new Chunkora.Contracts.Agent.V1.StatusService.StatusServiceClient(channel);
 var instanceClient = new Chunkora.Contracts.Agent.V1.InstanceService.InstanceServiceClient(channel);
 var instanceOperationClient = new Chunkora.Contracts.Agent.V1.InstanceOperationService.InstanceOperationServiceClient(channel);

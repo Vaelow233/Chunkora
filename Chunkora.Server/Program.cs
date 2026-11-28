@@ -126,7 +126,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+if (app.Configuration.GetValue("HttpsRedirectionEnabled", true)) 
+{ 
+    app.UseHttpsRedirection(); 
+}
 
 app.UseAuthentication();
 
