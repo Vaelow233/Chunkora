@@ -74,23 +74,24 @@ public class ReadRequestHandler : IRequestHandler<InstanceIoFileResponse>
                     return;
                 }
                 var chunkCount = fileSize / chunkSize + (fileSize % chunkSize == 0 ? 0 : 1);
-            
+                
+                var totalChunks = (int) ((fileSize - 1) / chunkSize + 1);
                 var buffer = new byte[chunkSize];
-                var chunkIndex = 0;
-
-                while (true)
+                var remaining = fileSize;
+                
+                for (var index = 0; index < totalChunks; index++)
                 {
-                    var bytesRead = await stream.ReadAsync(buffer.AsMemory());
-                    if (bytesRead == 0) break;
+                    var size = (int) Math.Min(remaining, chunkSize);
+                    await stream.ReadExactlyAsync(buffer.AsMemory(0, size));
                     var message = new InstanceIoFileResponse
                     {
                         Code = InstanceIoResult.Success,
                         TotalChunks = (int) chunkCount,
-                        Chunk = chunkIndex,
-                        Data = ByteString.CopyFrom(buffer, 0, bytesRead)
+                        Chunk = index,
+                        Data = ByteString.CopyFrom(buffer, 0, size)
                     };
                     await WriteResponse(message);
-                    chunkIndex++;
+                    remaining -= size;
                 }
             }
         }

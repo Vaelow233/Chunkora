@@ -35,7 +35,7 @@ public class InstanceIoConnectionManager
         _connections.TryRemove(new KeyValuePair<Guid, InstanceIoService>(nodeId, service));
     }
     
-    public async Task HandleResponseAsync(AgentInstanceIoMessage message)
+    public async Task HandleResponseAsync(AgentInstanceIoMessage message, CancellationToken cancellationToken = default)
     {
         if (message.DirectoryResponse != null)
         {
@@ -63,10 +63,23 @@ public class InstanceIoConnectionManager
                 {
                     error = new IOException(message.FileResponse.Error);
                 }
-                else if (!channel.Value.Writer.TryWrite(message.FileResponse.Data.ToByteArray()))
+                else
                 {
-                    // TODO: add speed control
-                    error = new IOException("The download buffer is full");
+                    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    timeoutCts.CancelAfter(TimeSpan.FromMinutes(5));
+                    try
+                    {
+                        await channel.Value.Writer.WriteAsync(message.FileResponse.Data.ToByteArray(), timeoutCts.Token);
+                    }
+                    catch (ChannelClosedException)
+                    {
+                        return;
+                    }
+                    catch (OperationCanceledException exception)
+                    {
+                        error = cancellationToken.IsCancellationRequested ? new IOException("Agent disconnected during download.", exception) 
+                            : new TimeoutException("Timed out waiting for download buffer space.", exception);
+                    }
                 }
                 if (error is not null || message.FileResponse.Chunk + 1 >= message.FileResponse.TotalChunks)
                 {
@@ -105,11 +118,7 @@ public class InstanceIoConnectionManager
             {
                 return;
             }
-            // When an error occurred or upload is finished, set the result
-            if (message.UploadResponse.HasError || message.UploadResponse.Chunk + 1 >= message.UploadResponse.TotalChunks)
-            {
-                pendingRequest.TrySetResult(message.UploadResponse);
-            }
+            pendingRequest.TrySetResult(message.UploadResponse);
         }
         
         if (message.DeleteResponse != null)
@@ -253,9 +262,12 @@ public class InstanceIoConnectionManager
             {
                 _pendingChannels[requestId] = new KeyValuePair<InstanceIoService, Channel<byte[]>>(instanceService, channel);
                 await instanceService.WriteAsync(message);
-                await foreach (var chunk in channel.Reader.ReadAllAsync(cancellationToken))
+                while (await channel.Reader.WaitToReadAsync(cancellationToken).AsTask().WaitAsync(TimeSpan.FromMinutes(5), cancellationToken))
                 {
-                    yield return chunk;
+                    while (channel.Reader.TryRead(out var chunk))
+                    {
+                        yield return chunk;
+                    }
                 }
             }
             else
@@ -351,23 +363,25 @@ public class InstanceIoConnectionManager
         long contentLength, CancellationToken cancellationToken = default)
     {
         var requestId = Guid.NewGuid().ToString("N");
-        var pending = new PendingRequest<InstanceIoUploadResponse>();
-        _pendingRequests[requestId] = pending;
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(TimeSpan.FromHours(3));
         const int chunkSize = 1024 * 1024;
         byte[] buffer = ArrayPool<byte>.Shared.Rent(chunkSize);
-        var chunkIndex = 0;
-        var totalChunk = (int) (contentLength / chunkSize + (contentLength % chunkSize == 0 ? 0 : 1));
+        var totalChunk = (int) Math.Max(1, contentLength / chunkSize + (contentLength % chunkSize == 0 ? 0 : 1));
+        var remaining = contentLength;
+        var ackTimeout = TimeSpan.FromMinutes(5);
         try
         {
             _connections.TryGetValue(instance.NodeId, out var instanceService);
             if (instanceService != null)
             {
-                while (true)
+                for (var index = 0; index < totalChunk; index++)
                 {
-                    int bytesRead = await stream.ReadAsync(buffer.AsMemory(0, chunkSize), cancellationToken);
-                    if (bytesRead == 0) break;
+                    var size = (int) Math.Min(remaining, chunkSize);
+                    if (size > 0)
+                    {
+                        await stream.ReadExactlyAsync(buffer.AsMemory(0, size), cancellationToken);
+                    }
+                    var pending = new PendingRequest<InstanceIoUploadResponse>();
+                    _pendingRequests[requestId] = pending;
                     var message = new ServerInstanceIoMessage
                     {
                         UploadRequest = new InstanceIoUploadRequest
@@ -376,24 +390,36 @@ public class InstanceIoConnectionManager
                             InstanceId = instance.Id.ToString("N"),
                             TotalChunks = totalChunk,
                             Path = path,
-                            Chunk = chunkIndex,
-                            Data = ByteString.CopyFrom(buffer, 0, bytesRead)
+                            Chunk = index,
+                            Data = ByteString.CopyFrom(buffer, 0, size)
                         }
                     };
                     await instanceService.WriteAsync(message);
-                    chunkIndex++;
+                    var response = await pending.Task.WaitAsync(ackTimeout, cancellationToken);
+                    if (response.Code != InstanceIoResult.Success)
+                    {
+                        return response;
+                    }
+                    if (response.Chunk != index || response.TotalChunks != totalChunk)
+                    {
+                        throw new IOException("Unexpected upload acknowledgement.");
+                    }
+                    if (index == totalChunk - 1)
+                    {
+                        return response;
+                    }
+                    remaining -= size;
                 }
+                throw new IOException();
             }
             else
             {
                 throw new InvalidOperationException("Instance agent service not found");
             }
-            return await pending.Task.WaitAsync(timeoutCts.Token);
         }
         finally
         {
             _pendingRequests.TryRemove(requestId, out _);
-            pending.TrySetCanceled();
         }
     }
     

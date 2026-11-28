@@ -40,7 +40,7 @@ public class InstanceIoService(InstanceIoConnectionManager manager, IHostApplica
                     continue;
                 }
 
-                await manager.HandleResponseAsync(message);
+                await manager.HandleResponseAsync(message, token);
             }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)

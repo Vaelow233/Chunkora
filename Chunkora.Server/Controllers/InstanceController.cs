@@ -3,6 +3,7 @@ using Chunkora.Server.Dtos;
 using Chunkora.Server.Requests;
 using Chunkora.Server.Services;
 using Chunkora.Server.Utils;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Chunkora.Server.Controllers;
@@ -96,18 +97,13 @@ public class InstanceController(ILogger<RoleController> logger, InstanceService 
     }
 
     [HttpGet("{id:guid}/files/download")]
-    public async Task Download(Guid id, string path, CancellationToken cancellationToken)
+    public async Task<ActionResult<Result>> Download(Guid id, string path, CancellationToken cancellationToken)
     {
         var reader = await instanceService.BeginDownloadAsync(id, path, cancellationToken);
 
         if (!reader.IsSuccess)
         {
-            // TODO: change there
-            var result = await instanceService.ReadFileAsync(id, path);
-            Response.ContentType = "application/json";
-            Response.StatusCode = 400;
-            await Response.WriteAsJsonAsync(result, cancellationToken);
-            return;
+            return HandleResult(Result.Failure(reader.Error!));
         }
 
         Response.ContentType = "application/octet-stream";
@@ -124,6 +120,8 @@ public class InstanceController(ILogger<RoleController> logger, InstanceService 
         {
             await Response.Body.WriteAsync(chunk, cancellationToken);
         }
+
+        return new EmptyResult();
     }
     
     [HttpGet("{id:guid}/logs")]
@@ -149,6 +147,7 @@ public class InstanceController(ILogger<RoleController> logger, InstanceService 
     
     [HttpPut("{id:guid}/files/upload")]
     [Consumes("application/octet-stream")]
+    [RequestSizeLimit(4096L * 1024 * 1024)] // limit: 4 GB; TODO: custom configuration of this
     public async Task<ActionResult<Result>> UploadFile(Guid id, string path, CancellationToken cancellationToken)
     {
         var result = await instanceService.UploadFileAsync(id, path, Request.Body, Request.ContentLength);

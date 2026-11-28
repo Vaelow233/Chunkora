@@ -1,7 +1,9 @@
 ﻿using System.Collections.Concurrent;
-using StreamWriter = Chunkora.Agent.Handler.StreamWriter;
+using Chunkora.Contracts.Agent.V1;
 
 namespace Chunkora.Agent.Utils;
+
+public record StreamWriter(Instance Instance, string RelativePath, string TempPath, FileStream Stream);
 
 public static class IoUtils
 {
