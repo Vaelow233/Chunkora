@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Chunkora</title>
+  <rect x="3" y="3" width="58" height="58" rx="15" fill="#1A1B20" stroke="#464554" stroke-width="1.5"/>
+  <path fill="#C0C1FF" d="M14 22 31 12.25a2 2 0 0 1 2 0l18.5 10.6a1 1 0 0 1 0 1.73L46 27.75l-14-8-10.4 5.95Z"/>
+  <path fill="#A7A9FF" d="m12.5 24.5 7.5 4.3v6.4l-7.5 4.3Z"/>
+  <path fill="#8083FF" d="m14 42 7.6-3.7L32 44.25l14-8 5.5 3.17a1 1 0 0 1 0 1.73L33 51.75a2 2 0 0 1-2 0Z"/>
+</svg>
