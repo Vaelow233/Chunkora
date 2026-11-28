@@ -1,5 +1,5 @@
 ﻿<h1>
-  <img src="icon.svg" width="40" align="center" alt="Logo">
+  <img src="icon.svg" width="40" align="absmiddle" alt="">
   Chunkora
 </h1>
 
